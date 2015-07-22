@@ -1,4 +1,4 @@
-import * as earley from "../lib/earley";
+import * as persil from "../lib/persil";
 
 var _ = 0;
 var INT = 1;
@@ -95,7 +95,7 @@ var calc = {
 };
 
 var str = "56 + 37*2 - (8 /";//75 + 904 )";
-var res = earley.parse(calc, START, str);
+var res = persil.parse(calc, START, str);
 
 if (res.error) {
     console.log("Parse error at " + res.location);
