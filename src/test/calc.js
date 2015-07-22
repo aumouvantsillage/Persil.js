@@ -17,7 +17,7 @@ var AOP = 11;
 var calc = {
     symbols: [
         // Non-terminal
-        "_", "int", "primary", "term", "expr", "start",
+        "whitespace", "int", "primary", "term", "expr", "start",
         // Terminal
         /[ \r\n\t]/, /[0-9]/, "(", ")", /[*/]/, /[+-]/
     ],
