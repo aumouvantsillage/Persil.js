@@ -94,13 +94,13 @@ var calc = {
     }
 };
 
-var str = "56 + 37*2 - (8 /";//75 + 904 )";
+var str = "56 + 37*2 - (8 /75 + 904 )";
 var res = persil.parse(calc, START, str);
 
 if (res.error) {
     console.log("Parse error at " + res.location);
     console.log(res.traces.map(t =>
-        t.map(e => e.rule ? e.rule + ":" + e.loc : e.toString()).join(" > ")
+        t.map(e => e.symbol.toString() + ":" + e.loc).join(" > ")
     ).join("\n"));
 } else {
     console.log(res.data);
