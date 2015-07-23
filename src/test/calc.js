@@ -62,7 +62,7 @@ var calc = {
             case PRIMARY:
                 switch (production) {
                     case 0:
-                        return parseInt(data);
+                        return parseInt(data[0]);
                     case 1:
                         return data[1];
                 }
@@ -90,7 +90,7 @@ var calc = {
             case START:
                 return data[1];
         }
-        return data;
+        return data[0];
     }
 };
 

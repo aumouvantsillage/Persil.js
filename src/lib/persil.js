@@ -123,9 +123,6 @@ function postprocess(grammar, states, str, fromLoc, fromState) {
         st = states[loc].filter(s => st.isDuplicateOf(s.next))[0];
     }
 
-    if (data.length === 1) {
-        data = data[0];
-    }
     if (grammar.postprocess) {
         data = grammar.postprocess(fromState.rule, grammar.rules[fromState.rule].indexOf(fromState.production), data, fromState.origin, fromLoc);
     }
