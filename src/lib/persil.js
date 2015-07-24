@@ -28,6 +28,8 @@ class State {
 }
 
 export function parse(grammar, rule, str) {
+    rule = grammar.symbols.indexOf(rule);
+
     var states = new Array(str.length + 1);
 
     // Add states for the given location.
@@ -132,7 +134,7 @@ function postprocess(grammar, states, str, fromLoc, fromState) {
 function makeTraces(grammar, states, fromStates, loc) {
     return fromStates.reduce((traces, st) => {
         var node = {
-            symbol: grammar.symbols[st.token].toString(),
+            symbol: grammar.symbols[st.token],
             loc: loc
         };
         var callers = states[st.origin].filter(q => q.token === st.rule);
