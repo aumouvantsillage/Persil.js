@@ -1,40 +1,57 @@
-import * as persil from "./persil";
 import * as fs from "fs";
-import * as stage0 from "./bnf-stage0";
+import * as persil from "../lib/persil";
+import * as bnf from "../lib/bnf";
+import * as ebnf from "../lib/ebnf.bnf";
 
-var bnf = fs.readFileSync("src/lib/bnf-stage1.g", {encoding: "utf-8"});
+var ebnfBnf = fs.readFileSync("src/lib/ebnf.bnf", {encoding: "utf-8"});
+var ebnfEbnf = fs.readFileSync("src/lib/ebnf.ebnf", {encoding: "utf-8"});
 
-// Compile BNF with stage 0 parser
-var stage1 = stage0.compile(bnf);
+// Compile EBNF grammar with bootstrap parser
+var stage1 = bnf.compile(ebnfBnf);
 
 if (stage1.error) {
-    error(stage1);
+    error(ebnfBnf, stage1);
 }
 
-// Compile BNF with stage 1 parser
-stage1.data.postprocess = stage0.postprocess;
-var stage2 = persil.parse(stage1.data, "grammar", bnf);
+// Compile EBNF grammar with EBNF parser
+stage1.data.postprocess = ebnf.postprocess;
+var stage2 = persil.parse(stage1.data, "grammar", ebnfEbnf);
 
 if (stage2.error) {
-    error(stage2);
+    error(ebnfEbnf, stage2);
 }
 
-// Compile BNF with stage 2 parser
-stage2.data.postprocess = stage0.postprocess;
-var stage3 = persil.parse(stage2.data, "grammar", bnf);
+console.log(JSON.stringify(stage2.data));
 
-if (stage3.error) {
-    error(stage3);
+function location(src, loc) {
+    var line = 1;
+    var col = 1;
+    for (var i = 0; i < loc; i ++) {
+        switch (src[i]) {
+            case "\r":
+                line ++;
+                col = 1;
+                if (src[i+1] === "\n") {
+                    i ++;
+                }
+                break;
+            case "\n":
+                line ++;
+                col = 1;
+                if (src[i+1] === "\r") {
+                    i ++;
+                }
+                break;
+            default:
+                col ++;
+        }
+    }
+    return {line, col};
 }
-else {
-    console.log(stage3.data);
-}
 
-// TODO check that stage 1 and stage 2 produce same parser
-// TODO use stage 0, 1, and 2 parsers on another grammar
-
-function error(obj) {
+function error(src, obj) {
+    var loc = location(src, obj.loc);
     throw `Parse error at ${obj.loc}\n` + obj.traces.map(t =>
-        t.map(e => e.symbol.toString() + ":" + e.loc).join(" > ")
+        t.map(e => e.symbol.toString() + ":" + loc.line + "," + loc.col).join(" > ")
     ).join("\n");
 }

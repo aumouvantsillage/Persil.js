@@ -15,7 +15,6 @@ choice:
 sequence:
     term __ sequence
     | term
-    | "%"
 
 term:
     target _ primary _ multiplicity
@@ -25,7 +24,8 @@ target:
     | %
 
 assignment_operator:
-    "=" | "+="
+    "="
+    | "+" "="
 
 multiplicity:
     "?" | "*" | "+" | %
@@ -76,7 +76,7 @@ _:
 
 comment:
     "/" "/" single_line_comment_content [\r\n]
-    | "/" "*" multiline_comment_content "*" "/"
+    | "/" "*" multiline_comment_content multiline_comment_end
 
 single_line_comment_content:
     [^\r\n] single_line_comment_content
@@ -84,5 +84,9 @@ single_line_comment_content:
 
 multiline_comment_content:
     [^*] multiline_comment_content
-    | "*" [^/] multiline_comment_content
+    | "*" [^*/] multiline_comment_content
     | %
+
+multiline_comment_end:
+    "*" multiline_comment_end
+    | "*" "/"

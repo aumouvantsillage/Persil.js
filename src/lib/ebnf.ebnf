@@ -1,0 +1,39 @@
+grammar:
+    _ rules+=rule (__ rules+=rule)* _
+
+rule:
+    name=id _ ":" _ definition=choice
+
+choice:
+    elements+=sequence (_ "|" _ elements+=sequence)*
+
+sequence:
+    elements+=(term | "%") (__ elements+=(term | "%"))*
+
+term:
+    (variable=id _ operator=("=" | "+=") _)?
+    (value=id | value=string | value=ranges | "(" value=choice ")")
+    (_ multiplicity=("?" | "*" | "+"))?
+
+id:
+    [a-zA-Z0-9_]+
+
+string:
+    "\"" content=([^"\\] | "\\" .)+ "\""
+
+ranges:
+    elements+=range (_ elements+=range)*
+
+range:
+    "[" ([^\]\\] | "\\" .)+ "]"
+    | "."
+
+__:
+    ([ \r\n\t] | comment)+
+
+_:
+    __?
+
+comment:
+    "//" [^\r\n]* [\r\n]
+    | "/*" ([^*] | "*"+ [^*/])* "*"+ "/"
