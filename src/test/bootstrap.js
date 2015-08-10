@@ -21,6 +21,7 @@ if (stage2.error) {
     error(ebnfEbnf, stage2);
 }
 
+stage2.data.transform();
 console.log(JSON.stringify(stage2.data));
 
 function location(src, loc) {
