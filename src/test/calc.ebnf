@@ -1,0 +1,18 @@
+start:
+    _ body=expr _
+
+expr:
+    operands+=term (_ operators+=[+-] _ operands+=term)*
+
+term:
+    operands+=primary (_ operators+=[*/] operands+=primary)*
+
+primary:
+    value=int
+    | "(" value=start ")"
+
+int:
+    [0-9]+
+
+_:
+    [ \r\n\t]*

@@ -21,8 +21,16 @@ if (stage2.error) {
     error(ebnfEbnf, stage2);
 }
 
-stage2.data.transform();
-console.log(JSON.stringify(stage2.data));
+var stage2grammar = stage2.data.generate();
+
+console.log(stage2.data.toString());
+
+// Compile EBNF grammar with generated EBNF parser
+var stage3 = persil.parse(stage2grammar, "grammar", ebnfEbnf);
+
+if (stage3.error) {
+    error(ebnfEbnf, stage3);
+}
 
 function location(src, loc) {
     var line = 1;

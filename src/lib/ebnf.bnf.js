@@ -1,6 +1,6 @@
 
 let ASTNode = {
-    create(obj) {
+    create(obj = {}) {
         return Object.create(this).extend(obj);
     },
 
@@ -15,34 +15,172 @@ let ASTNode = {
 let nodeTypes = {
     grammar: ASTNode.create({
         transform() {
+            for (let i = 0; i < this.rules.length; i ++) {
+                this.rules[i].definition.splitTerminals(this, {});
+            }
+            for (let i = 0; i < this.rules.length; i ++) {
+                this.rules[i].definition.removeMultiplicity(this);
+            }
+            for (let i = 0; i < this.rules.length; i ++) {
+                this.rules[i].definition.splitRanges();
+            }
+            for (let i = 0; i < this.rules.length; i ++) {
+                this.rules[i].definition.removeInnerChoices(this);
+            }
+        },
+
+        generate() {
+            let nodeTypes = {};
             this.rules.forEach(rule => {
-                rule.definition.removeMultiplicity(this);
+                nodeTypes[rule.name.text] = ASTNode.create();
             });
+
+            this.transform();
+
+            let symbols = this.rules.map(rule => rule.name.text);
+            let rules = this.rules.map(rule => rule.definition.generate(symbols, {}));
+
+            return {
+                symbols,
+                rules,
+                astMappings: this.rules.map(rule => rule.definition.astMappings),
+                nodeTypes,
+                postprocess: ebnfPostprocess
+            };
+        },
+
+        toString() {
+            return this.rules.map(rule => rule.toString()).join("\n\n");
         }
     }),
 
-    rule: ASTNode.create({}),
+    rule: ASTNode.create({
+        toString() {
+            return `${this.name}:\n\t${this.definition.toString()}`;
+        }
+    }),
 
     choice: ASTNode.create({
+        generate(symbols, regexps) {
+            return this.elements.map(seq => seq.generate(symbols, regexps));
+        },
+
+        splitTerminals(grammar, terminals) {
+            this.elements.forEach(seq => {
+                seq.splitTerminals(grammar, terminals);
+            });
+        },
+
         removeMultiplicity(grammar) {
             this.elements.forEach(seq => {
                 seq.removeMultiplicity(grammar);
             });
+        },
+
+        splitRanges() {
+            this.elements.forEach(seq => {
+                seq.splitRanges();
+            });
+        },
+
+        removeInnerChoices(grammar) {
+            this.elements.forEach(seq => {
+                seq.removeInnerChoices(grammar);
+            });
+        },
+
+        get astMappings() {
+            return this.elements.map(seq => seq.astMappings);
+        },
+
+        toString() {
+            return this.elements.map(seq => seq.toString()).join("\n\t| ");
         }
     }),
 
     sequence: ASTNode.create({
+        splitTerminals(grammar, terminals) {
+            this.elements.forEach(term => {
+                term.splitTerminals(grammar, terminals);
+            });
+        },
+
         removeMultiplicity(grammar) {
             this.elements.forEach(term => {
                 term.removeMultiplicity(grammar);
             });
+        },
+
+        splitRanges() {
+            this.elements.forEach(term => {
+                term.splitRanges();
+            });
+        },
+
+        removeInnerChoices(grammar) {
+            this.elements.forEach(term => {
+                term.removeInnerChoices(grammar);
+            });
+        },
+
+        generate(symbols, regexps) {
+            return this.elements.map(term => term.value.generate(symbols, regexps));
+        },
+
+        get astMappings() {
+            return this.elements.map(term => term.variable ? {
+                to: term.variable.text,
+                push: term.operator === "+="
+            } : null);
+        },
+
+        toString() {
+            return this.elements.map(term => term.toString()).join(" ");
         }
     }),
 
     term: ASTNode.create({
-        // p? => r ... r: p   | %
-        // p* => r ... r: p r | %
-        // p+ => r ... r: p r | p
+        splitTerminals(grammar, terminals) {
+            if (this.value.splitTerminals) {
+                this.value.splitTerminals(grammar, terminals);
+            }
+            if (!nodeTypes.string.isPrototypeOf(this.value) || this.value.content.length < 2) {
+                return;
+            }
+            let ruleName;
+            if (this.value.content in terminals) {
+                ruleName = terminals[this.value.content];
+            }
+            else {
+                ruleName = terminals[this.value.content] = nodeTypes.id.create({
+                    text: "$" + grammar.rules.length
+                });
+                grammar.rules.push(nodeTypes.rule.create({
+                    name: ruleName,
+                    definition: nodeTypes.choice.create({
+                        elements: [
+                            nodeTypes.sequence.create({
+                                elements: this.value.content.split("").map(ch =>
+                                    nodeTypes.term.create({
+                                        variable: null,
+                                        operator: null,
+                                        value: nodeTypes.string.create({
+                                            content: ch
+                                        }),
+                                        multiplicity: null
+                                    })
+                                )
+                            })
+                        ]
+                    })
+                }));
+            }
+            this.value = ruleName;
+        },
+
+        // v=p?  => r ... r: v=p    | %
+        // v+=p* => r ... r: v+=p r | %
+        // v+=p+ => r ... r: v+=p r | v+=p
         removeMultiplicity(grammar) {
             if (this.value.removeMultiplicity) {
                 this.value.removeMultiplicity(grammar);
@@ -51,7 +189,9 @@ let nodeTypes = {
                 return;
             }
 
-            let ruleName = "$" + grammar.rules.length;
+            let ruleName = nodeTypes.id.create({
+                text: "$" + grammar.rules.length
+            });
             grammar.rules.push(nodeTypes.rule.create({
                 name: ruleName,
                 definition: nodeTypes.choice.create({
@@ -60,6 +200,7 @@ let nodeTypes = {
                             elements: [
                                 nodeTypes.term.create({
                                     variable: this.variable,
+                                    operator: this.operator,
                                     value: this.value,
                                     multiplicity: null
                                 })
@@ -68,9 +209,7 @@ let nodeTypes = {
                                     [] :
                                     [
                                         nodeTypes.term.create({
-                                            value: nodeTypes.id.create({
-                                                text: ruleName
-                                            })
+                                            value: ruleName
                                         })
                                     ]
                             )
@@ -80,6 +219,7 @@ let nodeTypes = {
                                 [
                                     nodeTypes.term.create({
                                         variable: this.variable,
+                                        operator: this.operator,
                                         value: this.value,
                                         multiplicity: null
                                     })
@@ -90,19 +230,117 @@ let nodeTypes = {
                 })
             }));
 
-            this.value = nodeTypes.id.create({
-                text: ruleName
+            this.value = ruleName;
+            this.variable = this.operator = this.multiplicity = null;
+        },
+
+        splitRanges() {
+            if (this.value.splitRanges) {
+                this.value.splitRanges();
+            }
+
+            if (!nodeTypes.ranges.isPrototypeOf(this.value) || this.value.elements.length < 2) {
+                return;
+            }
+
+            this.value = nodeTypes.choice.create({
+                elements: [
+                    nodeTypes.sequence.create({
+                        elements: this.value.elements.map(range =>
+                            nodeTypes.term.create({
+                                variable: null,
+                                operator: null,
+                                value: nodeTypes.ranges.create({
+                                    elements: [range]
+                                }),
+                                multiplicity: null
+                            })
+                        )
+                    })
+                ]
             });
-            this.variable = this.multiplicity = null;
+        },
+
+        // v=a|b => v=r ... r: a|b
+        removeInnerChoices(grammar) {
+            if (this.value.removeInnerChoices) {
+                this.value.removeInnerChoices(grammar);
+            }
+
+            if (!nodeTypes.choice.isPrototypeOf(this.value)) {
+                return;
+            }
+
+            let ruleName = nodeTypes.id.create({
+                text: "$" + grammar.rules.length
+            });
+            grammar.rules.push(nodeTypes.rule.create({
+                name: ruleName,
+                definition: this.value
+            }));
+            this.value = ruleName;
+        },
+
+        toString() {
+            let valueAsString = nodeTypes.choice.isPrototypeOf(this.value) ?
+                `(${this.value.toString()})` :
+                this.value.toString();
+            return `${this.variable || ""}${this.operator || ""}${valueAsString}${this.multiplicity || ""}`;
         }
-
-
     }),
 
-    id: ASTNode.create({}),
-    string: ASTNode.create({}),
-    ranges: ASTNode.create({}),
-    range: ASTNode.create({})
+    id: ASTNode.create({
+        generate(symbols, regexps) {
+            return symbols.indexOf(this.text);
+        },
+
+        toString() {
+            return this.text;
+        }
+    }),
+
+    string: ASTNode.create({
+        splitTerminals(grammar, terminals) {
+            this.content = JSON.parse(`"${this.content}"`);
+        },
+
+        generate(symbols, regexps) {
+            let index = symbols.indexOf(this.content);
+            if (index < 0) {
+                index = symbols.length;
+                symbols.push(this.content);
+            }
+            return index;
+        },
+
+        toString() {
+            return `"${this.content}"`;
+        }
+    }),
+
+    ranges: ASTNode.create({
+        generate(symbols, regexps) {
+            return this.elements[0].generate(symbols, regexps);
+        },
+
+        toString() {
+            return this.elements.map(range => range.toString()).join("");
+        }
+    }),
+
+    range: ASTNode.create({
+        generate(symbols, regexps) {
+            if (!(this.text in regexps)) {
+                regexps[this.text] = symbols.length;
+                symbols.push(new RegExp(this.text));
+            }
+            return regexps[this.text];
+        },
+
+        toString() {
+            return this.text;
+        }
+    })
 };
 
 export function postprocess(rule, production, data, start, end) {
@@ -223,15 +461,44 @@ export function postprocess(rule, production, data, start, end) {
     return data;
 }
 
-    // Transform sub-expressions
-    // a | (b | c) => a | b | c
-    // a (b c) => a b c
-    // a (b | c) => a r ... r: b | c
-//    for (var r = 0; r < ast.rules.length; r ++) {
-//        ast.rules[r].definition.elements.forEach(seq => {
-//            seq.elements.forEach(term => {
-//
-//            });
-//        });
-//    }
+function ebnfPostprocess(rule, production, data, start, end) {
+    let symbol = this.symbols[rule];
+    let res = symbol[0] === "$" ? {} : this.nodeTypes[symbol].create();
+    res.$text = "";
+    data.forEach((value, index) => {
+        let mapping = this.astMappings[rule][production][index];
+        if (mapping !== null) {
+            if (!mapping.push) {
+                res[mapping.to] = value;
+            }
+            else if(!(mapping.to in res)) {
+                res[mapping.to] = [value];
+            }
+            else {
+                res[mapping.to].push(value);
+            }
+        }
+        else if (value !== null && typeof value !== "string") {
+            Object.keys(value).forEach(prop => {
+                if (prop[0] === "$") {
+                    return;
+                }
+                if (prop in res && res[prop] instanceof Array) {
+                    Array.prototype.push.apply(res[prop], value[prop]);
+                }
+                else {
+                    res[prop] = value[prop];
+                }
+            });
+        }
 
+        if (typeof value === "string") {
+            res.$text += value;
+        }
+        else if (value !== null) {
+            res.$text += value.$text;
+        }
+    });
+
+    return res;
+}
