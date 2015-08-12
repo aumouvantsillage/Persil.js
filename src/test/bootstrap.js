@@ -2,65 +2,34 @@ import * as fs from "fs";
 import * as persil from "../lib/persil";
 import * as bnf from "../lib/bnf";
 import * as ebnf from "../lib/ebnf.bnf";
-
-var ebnfBnf = fs.readFileSync("src/lib/ebnf.bnf", {encoding: "utf-8"});
-var ebnfEbnf = fs.readFileSync("src/lib/ebnf.ebnf", {encoding: "utf-8"});
+import {error} from "../lib/logging";
 
 // Compile EBNF grammar with bootstrap parser
-var stage1 = bnf.compile(ebnfBnf);
+const ebnfBnfSrc = fs.readFileSync("src/lib/ebnf.bnf", {encoding: "utf-8"});
+const ebnfBnf = bnf.compile(ebnfBnfSrc);
 
-if (stage1.error) {
-    error(ebnfBnf, stage1);
+if (ebnfBnf.error) {
+    error(ebnfBnfSrc, ebnfBnf);
 }
 
-// Compile EBNF grammar with EBNF parser
-stage1.data.postprocess = ebnf.postprocess;
-var stage2 = persil.parse(stage1.data, "grammar", ebnfEbnf);
+const ebnfGrammar1 = ebnfBnf.data;
+ebnfGrammar1.postprocess = ebnf.postprocess;
 
-if (stage2.error) {
-    error(ebnfEbnf, stage2);
+// Compile EBNF grammar with native EBNF parser
+const ebnfEbnfSrc = fs.readFileSync("src/lib/ebnf.ebnf", {encoding: "utf-8"});
+const ebnfEbnf1 = persil.parse(ebnfGrammar1, "grammar", ebnfEbnfSrc);
+
+if (ebnfEbnf1.error) {
+    error(ebnfEbnfSrc, ebnfEbnf1);
 }
 
-var stage2grammar = stage2.data.generate();
+const ebnfGrammar2 = ebnfEbnf1.data.generate();
 
-console.log(stage2.data.toString());
+console.log(ebnfEbnf1.data.toString());
 
 // Compile EBNF grammar with generated EBNF parser
-var stage3 = persil.parse(stage2grammar, "grammar", ebnfEbnf);
+const ebnfEbnf2 = persil.parse(ebnfGrammar2, "grammar", ebnfEbnfSrc);
 
-if (stage3.error) {
-    error(ebnfEbnf, stage3);
-}
-
-function location(src, loc) {
-    var line = 1;
-    var col = 1;
-    for (var i = 0; i < loc; i ++) {
-        switch (src[i]) {
-            case "\r":
-                line ++;
-                col = 1;
-                if (src[i+1] === "\n") {
-                    i ++;
-                }
-                break;
-            case "\n":
-                line ++;
-                col = 1;
-                if (src[i+1] === "\r") {
-                    i ++;
-                }
-                break;
-            default:
-                col ++;
-        }
-    }
-    return {line, col};
-}
-
-function error(src, obj) {
-    var loc = location(src, obj.loc);
-    throw `Parse error at ${obj.loc}\n` + obj.traces.map(t =>
-        t.map(e => e.symbol.toString() + ":" + loc.line + "," + loc.col).join(" > ")
-    ).join("\n");
+if (ebnfEbnf2.error) {
+    error(ebnfEbnfSrc, ebnfEbnf2);
 }

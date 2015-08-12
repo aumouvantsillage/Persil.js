@@ -1,6 +1,6 @@
-let State = {
+const State = {
     create(rule, production, dot = 0, origin = 0) {
-        let res = Object.create(this);
+        const res = Object.create(this);
         res.rule = rule;
         res.production = production;
         res.dot = dot;
@@ -32,7 +32,7 @@ let State = {
 export function parse(grammar, rule, str) {
     rule = grammar.symbols.indexOf(rule);
 
-    let states = new Array(str.length + 1);
+    const states = new Array(str.length + 1);
 
     // Add states for the given location.
     // Do not add duplicates.
@@ -60,7 +60,7 @@ export function parse(grammar, rule, str) {
         // We use an ordinary for loop since the loop body can
         // add new states to the current list.
         for (let j = 0; j < states[loc].length; j++) {
-            let st = states[loc][j];
+            const st = states[loc][j];
 
             if (st.isComplete) {
                 // Completion
@@ -84,7 +84,7 @@ export function parse(grammar, rule, str) {
                 // --------
                 // If the current state accepts the current character,
                 // create a new state at the next location in the input stream.
-                let symbol = grammar.symbols[st.token];
+                const symbol = grammar.symbols[st.token];
                 if (symbol === str[loc] || symbol.test && symbol.test(str[loc])) {
                     enqueue(loc + 1, [st.next]);
                 }
@@ -92,9 +92,9 @@ export function parse(grammar, rule, str) {
         }
     }
 
-    let completeStates = states[loc - 1].filter(s => s.rule === rule && s.origin === 0 && s.isComplete);
-    let failedStates   = states[loc - 1].filter(s => !s.isComplete && s.token >= grammar.rules.length);
-    let error = loc <= str.length || !completeStates.length;
+    const completeStates = states[loc - 1].filter(s => s.rule === rule && s.origin === 0 && s.isComplete);
+    const failedStates   = states[loc - 1].filter(s => !s.isComplete && s.token >= grammar.rules.length);
+    const error = loc <= str.length || !completeStates.length;
 
     return {
         error,
@@ -105,12 +105,12 @@ export function parse(grammar, rule, str) {
 }
 
 function postprocess(grammar, states, str, fromLoc, fromState) {
-    let data = [];
+    const data = [];
     let loc = fromLoc, st = fromState;
     while (st.dot > 0) {
-        let token = st.production[st.dot - 1];
+        const token = st.production[st.dot - 1];
         if (token < grammar.rules.length) {
-            let children = states[loc].filter(s =>
+            const children = states[loc].filter(s =>
                 s.rule === token && s.isComplete &&
                 states[s.origin].some(s => st.isDuplicateOf(s.next))
             );
@@ -128,20 +128,19 @@ function postprocess(grammar, states, str, fromLoc, fromState) {
         st = states[loc].filter(s => st.isDuplicateOf(s.next))[0];
     }
 
-    if (grammar.postprocess) {
-        data = grammar.postprocess(fromState.rule, grammar.rules[fromState.rule].indexOf(fromState.production), data, fromState.origin, fromLoc);
-    }
-    return data;
+    return grammar.postprocess ?
+        grammar.postprocess(fromState.rule, grammar.rules[fromState.rule].indexOf(fromState.production), data, fromState.origin, fromLoc) :
+        data;
 }
 
 function makeTraces(grammar, states, fromStates, loc) {
     return fromStates.reduce((traces, st) => {
-        let node = {
+        const node = {
             symbol: grammar.symbols[st.token],
             loc: loc
         };
-        let callers = states[st.origin].filter(q => q.token === st.rule);
-        let ts = callers.length ?
+        const callers = states[st.origin].filter(q => q.token === st.rule);
+        const ts = callers.length ?
             makeTraces(grammar, states, callers, st.origin) :
             [[]];
         return traces.concat(

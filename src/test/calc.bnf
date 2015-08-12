@@ -1,0 +1,22 @@
+start:
+    _ expr _
+
+expr:
+    term _ [+-] _ expr
+    | term
+
+term:
+    primary _ [*/] _ term
+    | primary
+
+primary:
+    int
+    | "(" start ")"
+
+int:
+    [0-9] int
+    | [0-9]
+
+_:
+    [ \r\n\t] _
+    | %

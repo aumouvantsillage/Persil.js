@@ -1,5 +1,5 @@
 
-let ASTNode = {
+const ASTNode = {
     create(obj = {}) {
         return Object.create(this).extend(obj);
     },
@@ -12,7 +12,7 @@ let ASTNode = {
     }
 };
 
-let nodeTypes = {
+const nodeTypes = {
     grammar: ASTNode.create({
         transform() {
             for (let i = 0; i < this.rules.length; i ++) {
@@ -30,15 +30,15 @@ let nodeTypes = {
         },
 
         generate() {
-            let nodeTypes = {};
+            const nodeTypes = {};
             this.rules.forEach(rule => {
                 nodeTypes[rule.name.text] = ASTNode.create();
             });
 
             this.transform();
 
-            let symbols = this.rules.map(rule => rule.name.text);
-            let rules = this.rules.map(rule => rule.definition.generate(symbols, {}));
+            const symbols = this.rules.map(rule => rule.name.text);
+            const rules = this.rules.map(rule => rule.definition.generate(symbols, {}));
 
             return {
                 symbols,
@@ -189,7 +189,7 @@ let nodeTypes = {
                 return;
             }
 
-            let ruleName = nodeTypes.id.create({
+            const ruleName = nodeTypes.id.create({
                 text: "$" + grammar.rules.length
             });
             grammar.rules.push(nodeTypes.rule.create({
@@ -271,7 +271,7 @@ let nodeTypes = {
                 return;
             }
 
-            let ruleName = nodeTypes.id.create({
+            const ruleName = nodeTypes.id.create({
                 text: "$" + grammar.rules.length
             });
             grammar.rules.push(nodeTypes.rule.create({
@@ -282,7 +282,7 @@ let nodeTypes = {
         },
 
         toString() {
-            let valueAsString = nodeTypes.choice.isPrototypeOf(this.value) ?
+            const valueAsString = nodeTypes.choice.isPrototypeOf(this.value) ?
                 `(${this.value.toString()})` :
                 this.value.toString();
             return `${this.variable || ""}${this.operator || ""}${valueAsString}${this.multiplicity || ""}`;
@@ -462,11 +462,11 @@ export function postprocess(rule, production, data, start, end) {
 }
 
 function ebnfPostprocess(rule, production, data, start, end) {
-    let symbol = this.symbols[rule];
-    let res = symbol[0] === "$" ? {} : this.nodeTypes[symbol].create();
+    const symbol = this.symbols[rule];
+    const res = symbol[0] === "$" ? {} : this.nodeTypes[symbol].create();
     res.$text = "";
     data.forEach((value, index) => {
-        let mapping = this.astMappings[rule][production][index];
+        const mapping = this.astMappings[rule][production][index];
         if (mapping !== null) {
             if (!mapping.push) {
                 res[mapping.to] = value;

@@ -30,7 +30,7 @@ const NOT_RBRACKET = 23;
 const SPACE = 24;
 const ANY_CHAR = 25;
 
-var grammar = {
+const grammar = {
     symbols: [
         // Non-terminal
         "grammar", "rules", "rule", "choice", "sequence", "term",
@@ -149,12 +149,12 @@ function postprocess(rule, production, data, start, end) {
 }
 
 function generate(data) {
-    var symbols = data.map(r => r.rule);
-    var regexps = {};
-    var rules = data.map(r =>
+    const symbols = data.map(r => r.rule);
+    const regexps = {};
+    const rules = data.map(r =>
         r.productions.map(p =>
             p.map(t => {
-                var i;
+                let i;
                 if (typeof t === "string") {
                     i = symbols.indexOf(t);
                 }

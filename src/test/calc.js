@@ -1,20 +1,21 @@
 import * as persil from "../lib/persil";
+import {error} from "../lib/logging";
 
-var _ = 0;
-var INT = 1;
-var PRIMARY = 2;
-var TERM = 3;
-var EXPR = 4;
-var START = 5;
+const _ = 0;
+const INT = 1;
+const PRIMARY = 2;
+const TERM = 3;
+const EXPR = 4;
+const START = 5;
 
-var SPACE = 6;
-var DIGIT = 7;
-var LPAR = 8;
-var RPAR = 9;
-var MOP = 10;
-var AOP = 11;
+const SPACE = 6;
+const DIGIT = 7;
+const LPAR = 8;
+const RPAR = 9;
+const MOP = 10;
+const AOP = 11;
 
-var calc = {
+const calcGrammar = {
     symbols: [
         // Non-terminal
         "whitespace", "int", "primary", "term", "expr", "start",
@@ -52,56 +53,57 @@ var calc = {
             [_, EXPR, _]
         ]
     ],
-    postprocess(rule, production, data, start, end) {
-        switch (rule) {
-            case INT:
-                if (production === 0) {
-                    return data[0] + data[1];
-                }
-                break;
-            case PRIMARY:
-                switch (production) {
-                    case 0:
-                        return parseInt(data[0]);
-                    case 1:
-                        return data[1];
-                }
-                break;
-            case TERM:
-                if (production === 0) {
-                    switch (data[2]) {
-                        case "*":
-                            return data[0] * data[4];
-                        case "/":
-                            return data[0] / data[4];
-                    }
-                }
-                break;
-            case EXPR:
-                if (production === 0) {
-                    switch (data[2]) {
-                        case "+":
-                            return data[0] + data[4];
-                        case "-":
-                            return data[0] - data[4];
-                    }
-                }
-                break;
-            case START:
-                return data[1];
-        }
-        return data[0];
-    }
+    postprocess
 };
 
-var str = "56 + 37*2 - (8 /75 + 904 )";
-var res = persil.parse(calc, "start", str);
+export function postprocess(rule, production, data, start, end) {
+    switch (this.symbols[rule]) {
+        case "int":
+            if (production === 0) {
+                return data[0] + data[1];
+            }
+            break;
+        case "primary":
+            switch (production) {
+                case 0:
+                    return parseInt(data[0]);
+                case 1:
+                    return data[1];
+            }
+            break;
+        case "term":
+            if (production === 0) {
+                switch (data[2]) {
+                    case "*":
+                        return data[0] * data[4];
+                    case "/":
+                        return data[0] / data[4];
+                }
+            }
+            break;
+        case "expr":
+            if (production === 0) {
+                switch (data[2]) {
+                    case "+":
+                        return data[0] + data[4];
+                    case "-":
+                        return data[0] - data[4];
+                }
+            }
+            break;
+        case "start":
+            return data[1];
+    }
+    return data[0];
+}
 
-if (res.error) {
-    console.log("Parse error at " + res.location);
-    console.log(res.traces.map(t =>
-        t.map(e => e.symbol.toString() + ":" + e.loc).join(" > ")
-    ).join("\n"));
-} else {
-    console.log(res.data);
+if (module === require.main) {
+    const exprSrc = "56 + 37*2 - (8 /75 + 904 )";
+    const expr = persil.parse(calcGrammar, "start", exprSrc);
+
+    if (expr.error) {
+        error(exprSrc, expr);
+    }
+
+    console.log(expr.data);
 }
