@@ -71,9 +71,7 @@ calcGrammar.nodeTypes.int.extend({
 });
 
 // Parse a sample string
-
-// FIXME space should be optional at the end
-const exprSrc = "56 + 37*2 - (8 /75 + 904 ) ";
+const exprSrc = "56 + 37*2 - (8 /75 + 904 )";
 const expr = persil.parse(calcGrammar, "start", exprSrc);
 
 if (expr.error) {

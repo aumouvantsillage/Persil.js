@@ -177,13 +177,17 @@ function generate(data) {
         )
     );
 
-    return {
+    const res = {
         symbols,
         rules,
         postprocess(rule, production, data, start, end) {
             return data;
         }
     };
+
+    persil.markNullableRules(res);
+
+    return res;
 }
 
 export function compile(src) {

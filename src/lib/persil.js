@@ -29,18 +29,49 @@ const State = {
     }
 };
 
+/*
+ * Mark nullable rules (Aycock and Horspool)
+ *
+ * This function can be called once for a given grammar.
+ *
+ * See explanations at http://loup-vaillant.fr/tutorials/earley-parsing/empty-rules
+ * TODO Implement alternative from https://github.com/jeffreykegler/kollos/blob/master/notes/misc/loup2.md
+ */
+export function markNullableRules(grammar) {
+    // Initialize the set of nullable rules as the set of rules
+    // that contain an empty production.
+    grammar.nullable = grammar.rules.map(r => r.some(p => !p.length));
+
+    // A rule is nullable if it has at least one production
+    // containing only nullable non-terminals.
+    let undecided;
+    do {
+        undecided = false;
+        grammar.rules.forEach((r, index) => {
+            if (!grammar.nullable[index] && r.some(p => p.every(s => s < grammar.nullable.length && grammar.nullable[s]))) {
+                grammar.nullable[index] = undecided = true;
+            }
+        });
+    } while(undecided);
+}
+
 export function parse(grammar, rule, str) {
     rule = grammar.symbols.indexOf(rule);
 
+    // Mark nullable rules if it has not already been done.
+    if (!("nullable" in grammar)) {
+        markNullableRules(grammar);
+    }
+
+    // Create the array for state sets
     const states = new Array(str.length + 1);
 
-    // Add states for the given location.
-    // Do not add duplicates.
-    function enqueue(loc, arr) {
+    // This function adds states to the state set at the given location.
+    function enqueue(loc, sts) {
         if (!states[loc]) {
             states[loc] = [];
         }
-        arr.forEach(s => {
+        sts.forEach(s => {
             if (!states[loc].some(q => s.isDuplicateOf(q))) {
                 states[loc].push(s);
             }
@@ -74,10 +105,11 @@ export function parse(grammar, rule, str) {
                 // ----------
                 // For each production referenced by the NonTerminal,
                 // create a new state at the beginning of that production.
-                // Bypass empty productions.
-                enqueue(loc, grammar.rules[st.token].map(p =>
-                    p.length ? State.create(st.token, p, 0, loc) : st.next)
-                );
+                // Bypass nullable rules.
+                enqueue(loc, grammar.rules[st.token].map(p => State.create(st.token, p, 0, loc)));
+                if (grammar.nullable[st.token]) {
+                    enqueue(loc, [st.next]);
+                }
             }
             else if (loc < str.length) {
                 // Scanning
@@ -95,9 +127,11 @@ export function parse(grammar, rule, str) {
     const completeStates = states[loc - 1].filter(s => s.rule === rule && s.origin === 0 && s.isComplete);
     const failedStates   = states[loc - 1].filter(s => !s.isComplete && s.token >= grammar.rules.length);
     const error = loc <= str.length || !completeStates.length;
+    const stateCount = states.reduce((prev, s) => prev + s.length, 0);
 
     return {
         error,
+        stateCount,
         loc: loc - 1,
         traces: error ? makeTraces(grammar, states, failedStates, loc - 1) : undefined,
         data: error ? undefined : postprocess(grammar, states, str, loc - 1, completeStates[0])

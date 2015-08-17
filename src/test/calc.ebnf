@@ -5,7 +5,7 @@ expr:
     operands+=term (_ operators+=[+-] _ operands+=term)*
 
 term:
-    operands+=primary (_ operators+=[*/] operands+=primary)*
+    operands+=primary (_ operators+=[*/] _ operands+=primary)*
 
 primary:
     value=int

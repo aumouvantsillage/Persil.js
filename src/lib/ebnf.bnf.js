@@ -1,3 +1,4 @@
+import {markNullableRules} from "./persil";
 
 const ASTNode = {
     create(obj = {}) {
@@ -39,14 +40,16 @@ const nodeTypes = {
 
             const symbols = this.rules.map(rule => rule.name.text);
             const rules = this.rules.map(rule => rule.definition.generate(symbols, {}));
-
-            return {
+            const res = {
                 symbols,
                 rules,
                 astMappings: this.rules.map(rule => rule.definition.astMappings),
                 nodeTypes,
                 postprocess: ebnfPostprocess
             };
+            markNullableRules(res);
+
+            return res;
         },
 
         toString() {

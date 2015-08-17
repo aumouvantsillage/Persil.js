@@ -25,8 +25,6 @@ if (ebnfEbnf1.error) {
 
 const ebnfGrammar2 = ebnfEbnf1.data.generate();
 
-console.log(ebnfEbnf1.data.toString());
-
 // Compile EBNF grammar with generated EBNF parser
 const ebnfEbnf2 = persil.parse(ebnfGrammar2, "grammar", ebnfEbnfSrc);
 

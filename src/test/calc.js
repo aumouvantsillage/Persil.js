@@ -106,4 +106,5 @@ if (module === require.main) {
     }
 
     console.log(expr.data);
+    console.log(`State count = ${expr.stateCount}`);
 }
