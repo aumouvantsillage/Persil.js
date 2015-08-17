@@ -1,32 +1,60 @@
+/*
+ * Rule definition
+ */
+
+// A grammar is defined as a sequence of rules
+// separated by white space.
 grammar:
     _ rules+=rule (__ rules+=rule)* _
 
+// A rule has a name and is defined by a choice expression.
 rule:
     name=id _ ":" _ definition=choice
 
+// A choice is a pipe-separated list of sequences.
 choice:
     elements+=sequence (_ "|" _ elements+=sequence)*
 
+// A sequence is a space-separated list of terms.
 sequence:
     elements+=(term | "%") (__ elements+=(term | "%"))*
 
+// A term has an optional variable assignment,
+// a value that is either a primary expression or a parenthesized subexpression,
+// and an optional multiplicity.
 term:
     (variable=id _ operator=("=" | "+=") _)?
     (value=id | value=string | value=ranges | "(" value=choice ")")
     (_ multiplicity=("?" | "*" | "+"))?
 
+/*
+ * Lexical elements
+ */
+
+// An id is a sequence of letters, digits and underscores.
 id:
     [a-zA-Z0-9_]+
 
+// A string is enclosed in double quotes.
+// Characters can be escaped using a backslash.
+// Strings are meant to be parsed as JavaScript strings.
 string:
     "\"" content=([^"\\] | "\\" .)+ "\""
 
+// Character ranges can be optionally separated by spaces.
 ranges:
     elements+=range (_ elements+=range)*
 
+// A range is a sequence of characters enclosed in square brackets, or a single dot.
+// Characters inside the square brackets can be escaped using a backslash.
+// Ranges are meant to be parsed as JavaScript regular expressions.
 range:
     "[" ([^\]\\] | "\\" .)+ "]"
     | "."
+
+/*
+ * White space
+ */
 
 __:
     ([ \r\n\t] | comment)+
@@ -34,6 +62,9 @@ __:
 _:
     __?
 
+/*
+ * Single and multi-line C-like comments.
+ */
 comment:
     "//" [^\r\n]* [\r\n]
     | "/*" ([^*] | "*"+ [^*/])* "*"+ "/"

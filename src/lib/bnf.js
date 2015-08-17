@@ -46,7 +46,7 @@ const grammar = {
             [_, RULES, _]
         ],
         [
-            [RULE, __, RULES],
+            [RULES, __, RULE],
             [RULE]
         ],
         // rule: id _ ":" _ sequence (_ "|" _ sequence)*
@@ -54,12 +54,12 @@ const grammar = {
             [ID, _, COLON, _, CHOICE]
         ],
         [
-            [SEQUENCE, _, PIPE, _, CHOICE],
+            [CHOICE, _, PIPE, _, SEQUENCE],
             [SEQUENCE]
         ],
         // sequence: term (__ term)*
         [
-            [TERM, __, SEQUENCE],
+            [SEQUENCE, __, TERM],
             [TERM],
             [PERCENT]
         ],
@@ -72,7 +72,7 @@ const grammar = {
         ],
         // id: [a-zA-Z_]+
         [
-            [ID_CHAR, ID],
+            [ID, ID_CHAR],
             [ID_CHAR]
         ],
         // character: "'" . "'"
@@ -85,7 +85,7 @@ const grammar = {
             [LBRACKET, RANGE_CONTENT, RBRACKET]
         ],
         [
-            [RANGE_CHAR, RANGE_CONTENT],
+            [RANGE_CONTENT, RANGE_CHAR],
             [RANGE_CHAR]
         ],
         [
@@ -94,7 +94,7 @@ const grammar = {
         ],
         // __: [ \r\n\t]+
         [
-            [SPACE, _]
+            [_, SPACE]
         ],
         // _: __?
         [
@@ -111,7 +111,7 @@ function postprocess(rule, production, data, start, end) {
             return generate(data[1]);
         case RULES:
             if (production === 0) {
-                return [data[0]].concat(data[2]);
+                return data[0].concat([data[2]]);
             }
             break;
         case RULE:
@@ -121,12 +121,12 @@ function postprocess(rule, production, data, start, end) {
             };
         case CHOICE:
             if (production === 0) {
-                return [data[0]].concat(data[4]);
+                return data[0].concat([data[4]]);
             }
             break;
         case SEQUENCE:
             switch (production) {
-                case 0: return [data[0]].concat(data[2]);
+                case 0: return data[0].concat([data[2]]);
                 case 2: return [];
             }
             break;

@@ -22,6 +22,7 @@ const ebnfEbnf1 = persil.parse(ebnfGrammar1, "grammar", ebnfEbnfSrc);
 if (ebnfEbnf1.error) {
     error(ebnfEbnfSrc, ebnfEbnf1);
 }
+console.log(ebnfEbnf1.stateCount);
 
 const ebnfGrammar2 = ebnfEbnf1.data.generate();
 

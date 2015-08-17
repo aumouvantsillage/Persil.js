@@ -182,8 +182,8 @@ const nodeTypes = {
         },
 
         // v=p?  => r ... r: v=p    | %
-        // v+=p* => r ... r: v+=p r | %
-        // v+=p+ => r ... r: v+=p r | v+=p
+        // v+=p* => r ... r: r v+=p | %
+        // v+=p+ => r ... r: r v+=p | v+=p
         removeMultiplicity(grammar) {
             if (this.value.removeMultiplicity) {
                 this.value.removeMultiplicity(grammar);
@@ -200,22 +200,23 @@ const nodeTypes = {
                 definition: nodeTypes.choice.create({
                     elements: [
                         nodeTypes.sequence.create({
-                            elements: [
-                                nodeTypes.term.create({
-                                    variable: this.variable,
-                                    operator: this.operator,
-                                    value: this.value,
-                                    multiplicity: null
-                                })
-                            ].concat(
-                                this.multiplicity === "?" ?
-                                    [] :
-                                    [
-                                        nodeTypes.term.create({
-                                            value: ruleName
-                                        })
-                                    ]
-                            )
+                            elements:
+                                (
+                                    this.multiplicity === "?" ?
+                                        [] :
+                                        [
+                                            nodeTypes.term.create({
+                                                value: ruleName
+                                            })
+                                        ]
+                                ).concat([
+                                    nodeTypes.term.create({
+                                        variable: this.variable,
+                                        operator: this.operator,
+                                        value: this.value,
+                                        multiplicity: null
+                                    })
+                                ])
                         }),
                         nodeTypes.sequence.create({
                             elements: this.multiplicity === "+" ?
@@ -355,7 +356,7 @@ export function postprocess(rule, production, data, start, end) {
 
         case "rules":
             if (production === 0) {
-                return [data[0]].concat(data[2]);
+                return data[0].concat([data[2]]);
             }
             break;
 
@@ -368,8 +369,8 @@ export function postprocess(rule, production, data, start, end) {
         case "choice":
             switch (production) {
                 case 0:
-                    data[4].elements.unshift(data[0]);
-                    return data[4];
+                    data[0].elements.push(data[4]);
+                    return data[0];
 
                 case 1:
                     return nodeTypes.choice.create({
@@ -381,8 +382,8 @@ export function postprocess(rule, production, data, start, end) {
         case "sequence":
             switch (production) {
                 case 0:
-                    data[2].elements.unshift(data[0]);
-                    return data[2];
+                    data[0].elements.push(data[2]);
+                    return data[0];
 
                 case 1:
                     return nodeTypes.sequence.create({
@@ -420,8 +421,8 @@ export function postprocess(rule, production, data, start, end) {
         case "id":
             switch (production) {
                 case 0:
-                    data[1].text = data[0] + data[1].text;
-                    return data[1];
+                    data[0].text += data[1];
+                    return data[0];
 
                 case 1:
                     return nodeTypes.id.create({
@@ -438,8 +439,8 @@ export function postprocess(rule, production, data, start, end) {
         case "ranges":
             switch (production) {
                 case 0:
-                    data[1].elements.unshift(data[0]);
-                    return data[1];
+                    data[0].elements.push(data[1]);
+                    return data[0];
 
                 case 1:
                     return nodeTypes.ranges.create({

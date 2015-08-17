@@ -79,4 +79,5 @@ if (expr.error) {
 }
 
 console.log(expr.data.evaluate());
+console.log(`State count = ${expr.stateCount}`);
 

@@ -2,18 +2,18 @@ grammar:
     _ rules _
 
 rules:
-    rule __ rules
+    rules __ rule
     | rule
 
 rule:
     id _ ":" _ choice
 
 choice:
-    sequence _ "|" _ choice
+    choice _ "|" _ sequence
     | sequence
 
 sequence:
-    term __ sequence
+    sequence __ term
     | term
 
 term:
@@ -37,14 +37,14 @@ primary:
     | "(" choice ")"
 
 id:
-    [a-zA-Z0-9_] id
+    id [a-zA-Z0-9_]
     | [a-zA-Z0-9_]
 
 string:
     "\"" string_content "\""
 
 string_content:
-    string_char string_content
+    string_content string_char
     | string_char
 
 string_char:
@@ -52,7 +52,7 @@ string_char:
     | "\\" .
 
 ranges:
-    range _ ranges
+    ranges _ range
     | range
 
 range:
@@ -60,7 +60,7 @@ range:
     | "."
 
 range_content:
-    range_char range_content
+    range_content range_char
     | range_char
 
 range_char:
@@ -79,14 +79,14 @@ comment:
     | "/" "*" multiline_comment_content multiline_comment_end
 
 single_line_comment_content:
-    [^\r\n] single_line_comment_content
+    single_line_comment_content [^\r\n]
     | %
 
 multiline_comment_content:
-    [^*] multiline_comment_content
-    | "*" [^*/] multiline_comment_content
+    multiline_comment_content [^*]
+    | multiline_comment_content "*" [^*/]
     | %
 
 multiline_comment_end:
-    "*" multiline_comment_end
+    multiline_comment_end "*"
     | "*" "/"

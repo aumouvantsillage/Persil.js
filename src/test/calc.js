@@ -25,12 +25,12 @@ const calcGrammar = {
     rules: [
         // _: [ \r\n\t]*
         [
-            [SPACE, _],
+            [_, SPACE],
             []
         ],
         // INT: [0-9]+
         [
-            [DIGIT, INT],
+            [INT, DIGIT],
             [DIGIT]
         ],
         // PRIMARY: INT | "(" START ")"
@@ -40,12 +40,12 @@ const calcGrammar = {
         ],
         // TERM: PRIMARY (_ [*/] _ TERM)*
         [
-            [PRIMARY, _, MOP, _, TERM],
+            [TERM, _, MOP, _, PRIMARY],
             [PRIMARY]
         ],
         // EXPR: TERM (_ [+-] _ EXPR)*
         [
-            [TERM, _, AOP, _, EXPR],
+            [EXPR, _, AOP, _, TERM],
             [TERM]
         ],
         // START: _ EXPR _
