@@ -1,4 +1,5 @@
 import * as persil from "./persil";
+import {error} from "./logging";
 
 const GRAMMAR = 0;
 const RULES = 1;
@@ -94,24 +95,24 @@ const grammar = {
         ],
         // __: [ \r\n\t]+
         [
-            [_, SPACE]
+            [SPACE, _]
         ],
         // _: __?
         [
             [__],
             []
         ]
-    ],
-    postprocess
+    ]
 };
 
-function postprocess(rule, production, data, start, end) {
+function actions(grammar, rule, production, data, start, end) {
     switch (rule) {
         case GRAMMAR:
             return generate(data[1]);
         case RULES:
             if (production === 0) {
-                return data[0].concat([data[2]]);
+                data[0].push(data[2]);
+                return data[0];
             }
             break;
         case RULE:
@@ -121,13 +122,17 @@ function postprocess(rule, production, data, start, end) {
             };
         case CHOICE:
             if (production === 0) {
-                return data[0].concat([data[4]]);
+                data[0].push(data[4]);
+                return data[0];
             }
             break;
         case SEQUENCE:
             switch (production) {
-                case 0: return data[0].concat([data[2]]);
-                case 2: return [];
+                case 0:
+                    data[0].push(data[2]);
+                    return data[0];
+                case 2:
+                    return [];
             }
             break;
         case TERM:
@@ -177,19 +182,7 @@ function generate(data) {
         )
     );
 
-    const res = {
-        symbols,
-        rules,
-        postprocess(rule, production, data, start, end) {
-            return data;
-        }
-    };
-
-    persil.markNullableRules(res);
-
-    return res;
+    return {symbols, rules};
 }
 
-export function compile(src) {
-    return persil.parse(grammar, "grammar", src);
-}
+export const compile = persil.parser(grammar, {actions});

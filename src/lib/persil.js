@@ -1,3 +1,17 @@
+export function parser(grammar, {start, actions}) {
+    // Mark nullable rules if it has not already been done.
+    if (!("nullable" in grammar)) {
+        markNullableRules(grammar);
+    }
+
+    let rule = grammar.symbols.indexOf(start);
+    if (rule < 0) {
+        rule = 0;
+    }
+
+    return str => parse(grammar, rule, actions, str);
+}
+
 const State = {
     create(rule, production, dot = 0, origin = 0) {
         const res = Object.create(this);
@@ -29,40 +43,7 @@ const State = {
     }
 };
 
-/*
- * Mark nullable rules (Aycock and Horspool)
- *
- * This function can be called once for a given grammar.
- *
- * See explanations at http://loup-vaillant.fr/tutorials/earley-parsing/empty-rules
- * TODO Implement alternative from https://github.com/jeffreykegler/kollos/blob/master/notes/misc/loup2.md
- */
-export function markNullableRules(grammar) {
-    // Initialize the set of nullable rules as the set of rules
-    // that contain an empty production.
-    grammar.nullable = grammar.rules.map(r => r.some(p => !p.length));
-
-    // A rule is nullable if it has at least one production
-    // containing only nullable non-terminals.
-    let undecided;
-    do {
-        undecided = false;
-        grammar.rules.forEach((r, index) => {
-            if (!grammar.nullable[index] && r.some(p => p.every(s => s < grammar.nullable.length && grammar.nullable[s]))) {
-                grammar.nullable[index] = undecided = true;
-            }
-        });
-    } while(undecided);
-}
-
-export function parse(grammar, rule, str) {
-    rule = grammar.symbols.indexOf(rule);
-
-    // Mark nullable rules if it has not already been done.
-    if (!("nullable" in grammar)) {
-        markNullableRules(grammar);
-    }
-
+function parse(grammar, rule, actions, str) {
     // Create the array for state sets
     const states = new Array(str.length + 1);
 
@@ -125,20 +106,47 @@ export function parse(grammar, rule, str) {
     }
 
     const completeStates = states[loc - 1].filter(s => s.rule === rule && s.origin === 0 && s.isComplete);
-    const failedStates   = states[loc - 1].filter(s => !s.isComplete && s.token >= grammar.rules.length);
+    const failedStates = states[loc - 1].filter(s => !s.isComplete && s.token >= grammar.rules.length);
+    const expected = grammar.symbols.filter((sym, index) => failedStates.some(s => s.token === index));
+
     const error = loc <= str.length || !completeStates.length;
-    const stateCount = states.reduce((prev, s) => prev + s.length, 0);
 
     return {
         error,
-        stateCount,
+        stateCount: states.reduce((prev, s) => prev + s.length, 0),
         loc: loc - 1,
-        traces: error ? makeTraces(grammar, states, failedStates, loc - 1) : undefined,
-        data: error ? undefined : postprocess(grammar, states, str, loc - 1, completeStates[0])
+        expected,
+        data: error ? undefined : postprocess(grammar, actions, states, str, loc - 1, completeStates[0])
     };
 }
 
-function postprocess(grammar, states, str, fromLoc, fromState) {
+/*
+ * Mark nullable rules (Aycock and Horspool)
+ *
+ * This function can be called once for a given grammar.
+ *
+ * See explanations at http://loup-vaillant.fr/tutorials/earley-parsing/empty-rules
+ * TODO Implement alternative from https://github.com/jeffreykegler/kollos/blob/master/notes/misc/loup2.md
+ */
+function markNullableRules(grammar) {
+    // Initialize the set of nullable rules as the set of rules
+    // that contain an empty production.
+    grammar.nullable = grammar.rules.map(r => r.some(p => !p.length));
+
+    // A rule is nullable if it has at least one production
+    // containing only nullable non-terminals.
+    let changed;
+    do {
+        changed = false;
+        grammar.rules.forEach((r, index) => {
+            if (!grammar.nullable[index] && r.some(p => p.every(s => s < grammar.nullable.length && grammar.nullable[s]))) {
+                grammar.nullable[index] = changed = true;
+            }
+        });
+    } while(changed);
+}
+
+function postprocess(grammar, actions, states, str, fromLoc, fromState) {
     const data = [];
     let loc = fromLoc, st = fromState;
     while (st.dot > 0) {
@@ -149,7 +157,7 @@ function postprocess(grammar, states, str, fromLoc, fromState) {
                 states[s.origin].some(s => st.isDuplicateOf(s.next))
             );
             if (children.length) {
-                data.unshift(postprocess(grammar, states, str, loc, children[0]));
+                data.unshift(postprocess(grammar, actions, states, str, loc, children[0]));
                 loc = children[0].origin;
             }
             else {
@@ -162,28 +170,23 @@ function postprocess(grammar, states, str, fromLoc, fromState) {
         st = states[loc].filter(s => st.isDuplicateOf(s.next))[0];
     }
 
-    return grammar.postprocess ?
-        grammar.postprocess(fromState.rule, grammar.rules[fromState.rule].indexOf(fromState.production), data, fromState.origin, fromLoc) :
+    return actions ?
+        actions(grammar, fromState.rule, grammar.rules[fromState.rule].indexOf(fromState.production), data, fromState.origin, fromLoc) :
         data;
 }
 
-function makeTraces(grammar, states, fromStates, loc) {
-    return fromStates.reduce((traces, st) => {
-        const node = {
-            symbol: grammar.symbols[st.token],
-            loc: loc
-        };
-        const callers = states[st.origin].filter(q => q.token === st.rule);
-        const ts = callers.length ?
-            makeTraces(grammar, states, callers, st.origin) :
-            [[]];
-        return traces.concat(
-            ts.map(t => t.concat([node])).filter(t =>
-                !traces.some(u =>
-                    u.length === t.length &&
-                    u.every((n, i) => n.symbol === t[i].symbol && n.loc === t[i].loc)
-                )
-            )
-        );
-    }, []);
+export function stringify(grammar) {
+    // Mark nullable rules if it has not already been done.
+    if (!("nullable" in grammar)) {
+        markNullableRules(grammar);
+    }
+
+    const symbolsAsStrings = grammar.symbols.map(s =>
+        s instanceof RegExp ? s.toString() : JSON.stringify(s)
+    );
+
+    const props = Object.keys(grammar).map(key => key + ":" +
+        (key === "symbols" ? "[" + symbolsAsStrings.join(",") + "]" : JSON.stringify(grammar[key]))
+    );
+    return `module.exports = {${props.join(",")}};`;
 }

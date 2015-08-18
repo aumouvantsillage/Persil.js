@@ -17,7 +17,7 @@ choice:
 
 // A sequence is a space-separated list of terms.
 sequence:
-    elements+=(term | "%") (__ elements+=(term | "%"))*
+    elements+=term (__ elements+=term)*
 
 // A term has an optional variable assignment,
 // a value that is either a primary expression or a parenthesized subexpression,

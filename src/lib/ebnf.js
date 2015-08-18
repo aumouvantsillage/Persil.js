@@ -1,20 +1,19 @@
-import {markNullableRules} from "./persil";
+import * as persil from "./persil";
+import * as grammar from "./ebnf.bnf.grammar.js";
 
-const ASTNode = {
-    create(obj = {}) {
-        return Object.create(this).extend(obj);
-    },
+function create(proto, props = {}) {
+    return extend(Object.create(proto), props);
+}
 
-    extend(obj) {
-        Object.getOwnPropertyNames(obj).forEach(prop => {
-            Object.defineProperty(this, prop, Object.getOwnPropertyDescriptor(obj, prop));
-        });
-        return this;
-    }
-};
+function extend(obj, props) {
+    Object.getOwnPropertyNames(props).forEach(p => {
+        Object.defineProperty(obj, p, Object.getOwnPropertyDescriptor(props, p));
+    });
+    return obj;
+}
 
 const nodeTypes = {
-    grammar: ASTNode.create({
+    grammar: {
         transform() {
             for (let i = 0; i < this.rules.length; i ++) {
                 this.rules[i].definition.splitTerminals(this, {});
@@ -33,37 +32,33 @@ const nodeTypes = {
         generate() {
             const nodeTypes = {};
             this.rules.forEach(rule => {
-                nodeTypes[rule.name.text] = ASTNode.create();
+                nodeTypes[rule.name.text] = {};
             });
 
             this.transform();
 
             const symbols = this.rules.map(rule => rule.name.text);
             const rules = this.rules.map(rule => rule.definition.generate(symbols, {}));
-            const res = {
+            return {
                 symbols,
                 rules,
                 astMappings: this.rules.map(rule => rule.definition.astMappings),
-                nodeTypes,
-                postprocess: ebnfPostprocess
+                nodeTypes
             };
-            markNullableRules(res);
-
-            return res;
         },
 
         toString() {
             return this.rules.map(rule => rule.toString()).join("\n\n");
         }
-    }),
+    },
 
-    rule: ASTNode.create({
+    rule: {
         toString() {
             return `${this.name}:\n\t${this.definition.toString()}`;
         }
-    }),
+    },
 
-    choice: ASTNode.create({
+    choice: {
         generate(symbols, regexps) {
             return this.elements.map(seq => seq.generate(symbols, regexps));
         },
@@ -99,9 +94,9 @@ const nodeTypes = {
         toString() {
             return this.elements.map(seq => seq.toString()).join("\n\t| ");
         }
-    }),
+    },
 
-    sequence: ASTNode.create({
+    sequence: {
         splitTerminals(grammar, terminals) {
             this.elements.forEach(term => {
                 term.splitTerminals(grammar, terminals);
@@ -140,9 +135,9 @@ const nodeTypes = {
         toString() {
             return this.elements.map(term => term.toString()).join(" ");
         }
-    }),
+    },
 
-    term: ASTNode.create({
+    term: {
         splitTerminals(grammar, terminals) {
             if (this.value.splitTerminals) {
                 this.value.splitTerminals(grammar, terminals);
@@ -155,19 +150,19 @@ const nodeTypes = {
                 ruleName = terminals[this.value.content];
             }
             else {
-                ruleName = terminals[this.value.content] = nodeTypes.id.create({
+                ruleName = terminals[this.value.content] = create(nodeTypes.id, {
                     text: "$" + grammar.rules.length
                 });
-                grammar.rules.push(nodeTypes.rule.create({
+                grammar.rules.push(create(nodeTypes.rule, {
                     name: ruleName,
-                    definition: nodeTypes.choice.create({
+                    definition: create(nodeTypes.choice, {
                         elements: [
-                            nodeTypes.sequence.create({
+                            create(nodeTypes.sequence, {
                                 elements: this.value.content.split("").map(ch =>
-                                    nodeTypes.term.create({
+                                    create(nodeTypes.term, {
                                         variable: null,
                                         operator: null,
-                                        value: nodeTypes.string.create({
+                                        value: create(nodeTypes.string, {
                                             content: ch
                                         }),
                                         multiplicity: null
@@ -192,25 +187,25 @@ const nodeTypes = {
                 return;
             }
 
-            const ruleName = nodeTypes.id.create({
+            const ruleName = create(nodeTypes.id, {
                 text: "$" + grammar.rules.length
             });
-            grammar.rules.push(nodeTypes.rule.create({
+            grammar.rules.push(create(nodeTypes.rule, {
                 name: ruleName,
-                definition: nodeTypes.choice.create({
+                definition: create(nodeTypes.choice, {
                     elements: [
-                        nodeTypes.sequence.create({
+                        create(nodeTypes.sequence, {
                             elements:
                                 (
                                     this.multiplicity === "?" ?
                                         [] :
                                         [
-                                            nodeTypes.term.create({
+                                            create(nodeTypes.term, {
                                                 value: ruleName
                                             })
                                         ]
                                 ).concat([
-                                    nodeTypes.term.create({
+                                    create(nodeTypes.term, {
                                         variable: this.variable,
                                         operator: this.operator,
                                         value: this.value,
@@ -218,10 +213,10 @@ const nodeTypes = {
                                     })
                                 ])
                         }),
-                        nodeTypes.sequence.create({
+                        create(nodeTypes.sequence, {
                             elements: this.multiplicity === "+" ?
                                 [
-                                    nodeTypes.term.create({
+                                    create(nodeTypes.term, {
                                         variable: this.variable,
                                         operator: this.operator,
                                         value: this.value,
@@ -247,14 +242,14 @@ const nodeTypes = {
                 return;
             }
 
-            this.value = nodeTypes.choice.create({
+            this.value = create(nodeTypes.choice, {
                 elements: [
-                    nodeTypes.sequence.create({
+                    create(nodeTypes.sequence, {
                         elements: this.value.elements.map(range =>
-                            nodeTypes.term.create({
+                            create(nodeTypes.term, {
                                 variable: null,
                                 operator: null,
-                                value: nodeTypes.ranges.create({
+                                value: create(nodeTypes.ranges, {
                                     elements: [range]
                                 }),
                                 multiplicity: null
@@ -275,10 +270,10 @@ const nodeTypes = {
                 return;
             }
 
-            const ruleName = nodeTypes.id.create({
+            const ruleName = create(nodeTypes.id, {
                 text: "$" + grammar.rules.length
             });
-            grammar.rules.push(nodeTypes.rule.create({
+            grammar.rules.push(create(nodeTypes.rule, {
                 name: ruleName,
                 definition: this.value
             }));
@@ -291,9 +286,9 @@ const nodeTypes = {
                 this.value.toString();
             return `${this.variable || ""}${this.operator || ""}${valueAsString}${this.multiplicity || ""}`;
         }
-    }),
+    },
 
-    id: ASTNode.create({
+    id: {
         generate(symbols, regexps) {
             return symbols.indexOf(this.text);
         },
@@ -301,9 +296,9 @@ const nodeTypes = {
         toString() {
             return this.text;
         }
-    }),
+    },
 
-    string: ASTNode.create({
+    string: {
         splitTerminals(grammar, terminals) {
             this.content = JSON.parse(`"${this.content}"`);
         },
@@ -320,9 +315,9 @@ const nodeTypes = {
         toString() {
             return `"${this.content}"`;
         }
-    }),
+    },
 
-    ranges: ASTNode.create({
+    ranges: {
         generate(symbols, regexps) {
             return this.elements[0].generate(symbols, regexps);
         },
@@ -330,9 +325,9 @@ const nodeTypes = {
         toString() {
             return this.elements.map(range => range.toString()).join("");
         }
-    }),
+    },
 
-    range: ASTNode.create({
+    range: {
         generate(symbols, regexps) {
             if (!(this.text in regexps)) {
                 regexps[this.text] = symbols.length;
@@ -344,15 +339,15 @@ const nodeTypes = {
         toString() {
             return this.text;
         }
-    })
+    }
 };
 
-export function postprocess(rule, production, data, start, end) {
-    switch (this.symbols[rule]) {
+export function actions(grammar, rule, production, data, start, end) {
+    switch (grammar.symbols[rule]) {
         case "grammar":
-            return nodeTypes.grammar.create({
+            return create(nodeTypes.grammar, {
                 rules: data[1]
-            });
+            }).generate();
 
         case "rules":
             if (production === 0) {
@@ -361,7 +356,7 @@ export function postprocess(rule, production, data, start, end) {
             break;
 
         case "rule":
-            return nodeTypes.rule.create({
+            return create(nodeTypes.rule, {
                 name: data[0],
                 definition: data[4]
             });
@@ -373,7 +368,7 @@ export function postprocess(rule, production, data, start, end) {
                     return data[0];
 
                 case 1:
-                    return nodeTypes.choice.create({
+                    return create(nodeTypes.choice, {
                         elements: data
                     });
             }
@@ -386,14 +381,14 @@ export function postprocess(rule, production, data, start, end) {
                     return data[0];
 
                 case 1:
-                    return nodeTypes.sequence.create({
+                    return create(nodeTypes.sequence, {
                         elements: data
                     });
             }
             break;
 
         case "term":
-            return nodeTypes.term.create({
+            return create(nodeTypes.term, {
                 variable: data[0] && data[0].variable,
                 operator: data[0] && data[0].operator,
                 value: data[2],
@@ -425,14 +420,14 @@ export function postprocess(rule, production, data, start, end) {
                     return data[0];
 
                 case 1:
-                    return nodeTypes.id.create({
+                    return create(nodeTypes.id, {
                         text: data[0]
                     });
             }
             break;
 
         case "string":
-            return nodeTypes.string.create({
+            return create(nodeTypes.string, {
                 content: data[1]
             });
 
@@ -443,14 +438,14 @@ export function postprocess(rule, production, data, start, end) {
                     return data[0];
 
                 case 1:
-                    return nodeTypes.ranges.create({
+                    return create(nodeTypes.ranges, {
                         elements: data
                     });
             }
             break;
 
         case "range":
-            return nodeTypes.range.create({
+            return create(nodeTypes.range, {
                 text: data.join("")
             });
 
@@ -465,12 +460,12 @@ export function postprocess(rule, production, data, start, end) {
     return data;
 }
 
-function ebnfPostprocess(rule, production, data, start, end) {
-    const symbol = this.symbols[rule];
-    const res = symbol[0] === "$" ? {} : this.nodeTypes[symbol].create();
+function ebnfActions(grammar, rule, production, data, start, end) {
+    const symbol = grammar.symbols[rule];
+    const res = symbol[0] === "$" ? {} : create(grammar.nodeTypes[symbol]);
     res.$text = "";
     data.forEach((value, index) => {
-        const mapping = this.astMappings[rule][production][index];
+        const mapping = grammar.astMappings[rule][production][index];
         if (mapping !== null) {
             if (!mapping.push) {
                 res[mapping.to] = value;
@@ -505,4 +500,13 @@ function ebnfPostprocess(rule, production, data, start, end) {
     });
 
     return res;
+}
+
+export const compile = persil.parser(grammar, {actions});
+
+export function parser(grammar, {start, methods}) {
+    for (let n in methods) {
+        extend(grammar.nodeTypes[n], methods[n]);
+    }
+    return persil.parser(grammar, {start, actions: ebnfActions});
 }

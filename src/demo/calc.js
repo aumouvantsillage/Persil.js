@@ -52,12 +52,11 @@ const calcGrammar = {
         [
             [_, EXPR, _]
         ]
-    ],
-    postprocess
+    ]
 };
 
-export function postprocess(rule, production, data, start, end) {
-    switch (this.symbols[rule]) {
+export function actions(grammar, rule, production, data, start, end) {
+    switch (grammar.symbols[rule]) {
         case "int":
             if (production === 0) {
                 return data[0] + data[1];
@@ -97,9 +96,11 @@ export function postprocess(rule, production, data, start, end) {
     return data[0];
 }
 
+const parseCalc = persil.parser(calcGrammar, {start: "start", actions});
+
 if (module === require.main) {
     const exprSrc = "56 + 37*2 - (8 /75 + 904 )";
-    const expr = persil.parse(calcGrammar, "start", exprSrc);
+    const expr = parseCalc(exprSrc);
 
     if (expr.error) {
         error(exprSrc, expr);
