@@ -1,6 +1,4 @@
-import * as fs from "fs";
-import * as ebnf from "../lib/ebnf";
-import {error} from "../lib/logging";
+import * as persil from "../..";
 import * as grammar from "./calc.ebnf.grammar";
 
 const methods = {
@@ -12,12 +10,12 @@ const methods = {
 
     expr: {
         evaluate() {
-            const first = this.operands[0].evaluate();
-            return this.operators ?
-                this.operators.reduce((prev, curr, index) =>
-                    curr === "+" ?
-                        prev + this.operands[index + 1].evaluate() :
-                        prev - this.operands[index + 1].evaluate(),
+            const first = this.first.evaluate();
+            return this.operations ?
+                this.operations.reduce((prev, curr) =>
+                    curr.operator === "+" ?
+                        prev + curr.operand.evaluate() :
+                        prev - curr.operand.evaluate(),
                     first) :
                 first;
         }
@@ -25,12 +23,12 @@ const methods = {
 
     term: {
         evaluate() {
-            const first = this.operands[0].evaluate();
-            return this.operators ?
-                this.operators.reduce((prev, curr, index) =>
-                    curr === "*" ?
-                        prev * this.operands[index + 1].evaluate() :
-                        prev / this.operands[index + 1].evaluate(),
+            const first = this.first.evaluate();
+            return this.operations ?
+                this.operations.reduce((prev, curr) =>
+                    curr.operator === "*" ?
+                        prev * curr.operand.evaluate() :
+                        prev / curr.operand.evaluate(),
                     first) :
                 first;
         }
@@ -49,14 +47,14 @@ const methods = {
     }
 };
 
-const parseCalc = ebnf.parser(grammar, {methods});
+const parseCalc = persil.ebnf.parser(grammar, {methods});
 const exprSrc = "56 + 37*2 - (8 /75 + 904 )";
 const expr = parseCalc(exprSrc);
 
 if (expr.error) {
-    error(exprSrc, expr);
+    console.log(persil.error(exprSrc, expr));
 }
-
-console.log(expr.data.evaluate());
-console.log(`State count = ${expr.stateCount}`);
-
+else {
+    console.log(expr.data.evaluate());
+    console.log(`State count = ${expr.stateCount}`);
+}

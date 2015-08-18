@@ -2,7 +2,7 @@ export function error(src, obj) {
     const loc = location(src, obj.loc);
     const expected = obj.expected.map(e => e instanceof RegExp ? e.toString() : JSON.stringify(e)).join(" | ");
     const found = JSON.stringify(src[obj.loc]);
-    throw `Parse error at ${loc.line}:${loc.col}.\nExpected ${expected}\nFound ${found}.`;
+    return `Parse error at ${loc.line}:${loc.col}.\nExpected ${expected}\nFound ${found}.`;
 }
 
 function location(src, loc) {

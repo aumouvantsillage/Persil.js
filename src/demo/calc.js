@@ -1,5 +1,4 @@
-import * as persil from "../lib/persil";
-import {error} from "../lib/logging";
+import * as persil from "../..";
 
 const _ = 0;
 const INT = 1;
@@ -103,9 +102,10 @@ if (module === require.main) {
     const expr = parseCalc(exprSrc);
 
     if (expr.error) {
-        error(exprSrc, expr);
+        console.log(persil.error(exprSrc, expr));
     }
-
-    console.log(expr.data);
-    console.log(`State count = ${expr.stateCount}`);
+    else {
+        console.log(expr.data);
+        console.log(`State count = ${expr.stateCount}`);
+    }
 }

@@ -1,7 +1,5 @@
 
-import {compile} from "../lib/ebnf";
-import {stringify} from "../lib/persil";
-import {error} from "../lib/logging";
+import * as persil from "../..";
 import fs from "fs";
 
 const args = process.argv.slice(2);
@@ -10,9 +8,11 @@ fs.readFile(args[0], {encoding: "utf-8"}, (err, data) => {
     if (err) {
         throw err;
     }
-    const res = compile(data);
+    const res = persil.ebnf.compile(data);
     if (res.error) {
-        error(data, res);
+        process.stderr.write(persil.error(data, res) + "\n");
     }
-    console.log(stringify(res.data));
+    else {
+        process.stdout.write(persil.stringify(res.data));
+    }
 });
