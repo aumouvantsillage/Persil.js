@@ -102,10 +102,10 @@ if (module === require.main) {
     const expr = parseCalc(exprSrc);
 
     if (expr.error) {
-        console.log(persil.error(exprSrc, expr));
+        process.stderr.write(persil.error(exprSrc, expr) + "\n");
+        process.exit();
     }
-    else {
-        console.log(expr.data);
-        console.log(`State count = ${expr.stateCount}`);
-    }
+
+    console.log(expr.data);
+    console.log(`State count = ${expr.stateCount}`);
 }
