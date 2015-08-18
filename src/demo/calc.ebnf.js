@@ -3,45 +3,45 @@ import * as grammar from "./calc.ebnf.grammar";
 
 const methods = {
     start: {
-        evaluate() {
-            return this.body.evaluate();
+        get result() {
+            return this.body.result;
         }
     },
 
     expr: {
-        evaluate() {
-            const first = this.first.evaluate();
+        get result() {
+            const first = this.first.result;
             return this.operations ?
                 this.operations.reduce((prev, curr) =>
                     curr.operator === "+" ?
-                        prev + curr.operand.evaluate() :
-                        prev - curr.operand.evaluate(),
+                        prev + curr.operand.result :
+                        prev - curr.operand.result,
                     first) :
                 first;
         }
     },
 
     term: {
-        evaluate() {
-            const first = this.first.evaluate();
+        get result() {
+            const first = this.first.result;
             return this.operations ?
                 this.operations.reduce((prev, curr) =>
                     curr.operator === "*" ?
-                        prev * curr.operand.evaluate() :
-                        prev / curr.operand.evaluate(),
+                        prev * curr.operand.result :
+                        prev / curr.operand.result,
                     first) :
                 first;
         }
     },
 
     primary: {
-        evaluate() {
-            return this.value.evaluate();
+        get result() {
+            return this.value.result;
         }
     },
 
     int: {
-        evaluate() {
+        get result() {
             return parseInt(this.$text);
         }
     }
@@ -55,6 +55,6 @@ if (expr.error) {
     console.log(persil.error(exprSrc, expr));
 }
 else {
-    console.log(expr.data.evaluate());
+    console.log(expr.data.result);
     console.log(`State count = ${expr.stateCount}`);
 }
