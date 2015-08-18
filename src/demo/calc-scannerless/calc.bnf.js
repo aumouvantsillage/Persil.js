@@ -1,4 +1,4 @@
-import * as persil from "../..";
+import * as persil from "../../..";
 import * as grammar from "./calc.bnf.grammar";
 import {actions} from "./calc";
 

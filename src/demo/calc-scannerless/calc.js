@@ -1,4 +1,4 @@
-import * as persil from "../..";
+import * as persil from "../../..";
 
 const _ = 0;
 const INT = 1;

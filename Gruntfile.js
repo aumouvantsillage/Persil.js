@@ -22,7 +22,7 @@ module.exports = function (grunt) {
             },
             demo: {
                 files: {
-                    "dist/demo/calc.bnf.grammar.js": ["src/demo/calc.bnf"]
+                    "dist/demo/calc-scannerless/calc.bnf.grammar.js": ["src/demo/calc-scannerless/calc.bnf"]
                 }
             }
         },
@@ -30,7 +30,7 @@ module.exports = function (grunt) {
         ebnf: {
             demo: {
                 files: {
-                    "dist/demo/calc.ebnf.grammar.js": ["src/demo/calc.ebnf"]
+                    "dist/demo/calc-scannerless/calc.ebnf.grammar.js": ["src/demo/calc-scannerless/calc.ebnf"]
                 }
             }
         }
@@ -39,13 +39,17 @@ module.exports = function (grunt) {
     grunt.registerTask("default", ["babel", "bnf", "ebnf"]);
 
     grunt.registerMultiTask("bnf", function () {
-        var persil = require("./");
+        // We need to use explicit dependencies here.
+        // index.js breaks since ebnf.bnf has not already been compiled.
+        var persil = require("./dist/lib/persil");
+        var bnf = require("./dist/lib/bnf");
+        var logging = require("./dist/lib/logging");
 
         this.files.forEach(function (f) {
             var src = grunt.file.read(f.src[0]);
-            var res = persil.bnf.compile(src);
+            var res = bnf.compile(src);
             if (res.error) {
-                grunt.log.error(persil.error(src, res));
+                grunt.log.error(logging.error(src, res));
             }
             grunt.file.write(f.dest, persil.stringify(res.data));
         });
