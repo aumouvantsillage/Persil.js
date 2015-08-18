@@ -4,4 +4,5 @@ export * from "./lib/logging";
 
 import * as bnf from "./lib/bnf";
 import * as ebnf from "./lib/ebnf";
-export {bnf, ebnf};
+import * as ast from "./lib/ast";
+export {bnf, ebnf, ast};

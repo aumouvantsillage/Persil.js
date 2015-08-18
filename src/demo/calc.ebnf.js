@@ -47,7 +47,7 @@ const methods = {
     }
 };
 
-const parseCalc = persil.ebnf.parser(grammar, {methods});
+const parseCalc = persil.ast.parser(grammar, {methods});
 const exprSrc = "56 + 37*2 - (8 /75 + 904 )";
 const expr = parseCalc(exprSrc);
 

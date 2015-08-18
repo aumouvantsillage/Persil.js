@@ -1,16 +1,6 @@
 import * as persil from "./persil";
 import * as grammar from "./ebnf.bnf.grammar.js";
-
-function create(proto, props = {}) {
-    return extend(Object.create(proto), props);
-}
-
-function extend(obj, props) {
-    Object.getOwnPropertyNames(props).forEach(p => {
-        Object.defineProperty(obj, p, Object.getOwnPropertyDescriptor(props, p));
-    });
-    return obj;
-}
+import {create} from "./ast";
 
 const nodeTypes = {
     grammar: {
@@ -460,53 +450,4 @@ export function actions(grammar, rule, production, data, start, end) {
     return data;
 }
 
-function ebnfActions(grammar, rule, production, data, start, end) {
-    const symbol = grammar.symbols[rule];
-    const res = symbol[0] === "$" ? {} : create(grammar.nodeTypes[symbol]);
-    res.$text = "";
-    data.forEach((value, index) => {
-        const mapping = grammar.astMappings[rule][production][index];
-        if (mapping !== null) {
-            if (!mapping.push) {
-                res[mapping.to] = value;
-            }
-            else if(!(mapping.to in res)) {
-                res[mapping.to] = [value];
-            }
-            else {
-                res[mapping.to].push(value);
-            }
-        }
-        else if (value !== null && typeof value !== "string") {
-            Object.keys(value).forEach(prop => {
-                if (prop[0] === "$") {
-                    return;
-                }
-                if (prop in res && res[prop] instanceof Array) {
-                    Array.prototype.push.apply(res[prop], value[prop]);
-                }
-                else {
-                    res[prop] = value[prop];
-                }
-            });
-        }
-
-        if (typeof value === "string") {
-            res.$text += value;
-        }
-        else if (value !== null) {
-            res.$text += value.$text;
-        }
-    });
-
-    return res;
-}
-
 export const compile = persil.parser(grammar, {actions});
-
-export function parser(grammar, {start, methods}) {
-    for (let n in methods) {
-        extend(grammar.nodeTypes[n], methods[n]);
-    }
-    return persil.parser(grammar, {start, actions: ebnfActions});
-}
