@@ -22,7 +22,7 @@ module.exports = function (grunt) {
             },
             demo: {
                 files: {
-                    "build/test/calc.bnf.grammar.js": ["src/test/calc.bnf"]
+                    "build/demo/calc.bnf.grammar.js": ["src/demo/calc.bnf"]
                 }
             }
         },
@@ -30,7 +30,7 @@ module.exports = function (grunt) {
         ebnf: {
             demo: {
                 files: {
-                    "build/test/calc.ebnf.grammar.js": ["src/test/calc.ebnf"]
+                    "build/demo/calc.ebnf.grammar.js": ["src/demo/calc.ebnf"]
                 }
             }
         }
