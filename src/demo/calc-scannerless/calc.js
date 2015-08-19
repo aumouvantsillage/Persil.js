@@ -14,7 +14,7 @@ const RPAR = 9;
 const MOP = 10;
 const AOP = 11;
 
-const calcGrammar = {
+const grammar = {
     symbols: [
         // Non-terminal
         "whitespace", "int", "primary", "term", "expr", "start",
@@ -95,7 +95,7 @@ export function actions(grammar, rule, production, data, start, end) {
     return data[0];
 }
 
-const parseCalc = persil.parser(calcGrammar, {start: "start", actions});
+const parseCalc = persil.parser(grammar, {start: "start", actions});
 
 if (module === require.main) {
     const exprSrc = "56 + 37*2 - (8 /75 + 904 )";

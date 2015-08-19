@@ -1,5 +1,5 @@
 import * as persil from "../../..";
-import * as lexer from "./calc-lexer";
+import {symbols, ignore} from "./calc-symbols";
 
 const PRIMARY = 0;
 const TERM = 1;
@@ -11,8 +11,9 @@ const RPAR = 5;
 const MOP = 6;
 const AOP = 7;
 
-const calcGrammar = {
-    symbols: ["primary", "term", "expr"].concat(lexer.symbols),
+const grammar = {
+    symbols: ["primary", "term", "expr"].concat(symbols),
+    ignore: ignore,
     rules: [
         // PRIMARY: INT | "(" START ")"
         [
@@ -65,19 +66,13 @@ export function actions(grammar, rule, production, data, start, end) {
     return data[0];
 }
 
-const parseCalc = persil.parser(calcGrammar, {start: "expr", actions});
+const parseCalc = persil.parser(grammar, {start: "expr", actions, scan: persil.scanner(grammar)});
 
 if (module === require.main) {
     const src = "56 + 37*2 - (8 /75 + 904 )";
-    const tokens = lexer.scan(src);
-    if (tokens.error) {
-        process.stderr.write(persil.error(src, tokens) + "\n");
-        process.exit();
-    }
-
-    const expr = parseCalc(tokens);
+    const expr = parseCalc(src);
     if (expr.error) {
-        process.stderr.write(persil.error(tokens, expr) + "\n");
+        process.stderr.write(persil.error(src, expr) + "\n");
         process.exit();
     }
 

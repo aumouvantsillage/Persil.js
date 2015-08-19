@@ -1,4 +1,4 @@
-export function parser(grammar, {start, actions}) {
+export function parser(grammar, {start, actions, scan}) {
     // Mark nullable rules if it has not already been done.
     if (!("nullable" in grammar)) {
         markNullableRules(grammar);
@@ -9,7 +9,13 @@ export function parser(grammar, {start, actions}) {
         rule = 0;
     }
 
-    return str => parse(grammar, rule, actions, str);
+    if (!scan) {
+        scan = function (str) {
+            return str.split("").map((value, loc) => ({value, loc}));
+        };
+    }
+
+    return str => parse(grammar, scan, actions, rule, str);
 }
 
 const State = {
@@ -43,18 +49,23 @@ const State = {
     }
 };
 
-function parse(grammar, rule, actions, str) {
-    // Create the array for state sets
-    const states = new Array(str.length + 1);
+function parse(grammar, scan, actions, rule, str) {
+    const tokens = scan(str);
+    if (tokens.error) {
+        return tokens;
+    }
 
-    // This function adds states to the state set at the given location.
-    function enqueue(loc, sts) {
-        if (!states[loc]) {
-            states[loc] = [];
+    // Create the array for state sets
+    const states = new Array(tokens.length);
+
+    // This function adds states to the state set at the given index.
+    function enqueue(index, sts) {
+        if (!states[index]) {
+            states[index] = [];
         }
         sts.forEach(s => {
-            if (!states[loc].some(q => s.isDuplicateOf(q))) {
-                states[loc].push(s);
+            if (!states[index].some(q => s.isDuplicateOf(q))) {
+                states[index].push(s);
             }
         });
     }
@@ -65,21 +76,21 @@ function parse(grammar, rule, actions, str) {
     // Process each element of the input string.
     // Execute one more iteration after the last element
     // to perform a final completion step.
-    // Stop if there is no remaining state at the current location.
-    let loc;
-    for (loc = 0; loc <= str.length && states[loc] && states[loc].length; loc ++) {
-        // For each state at the current location.
+    // Stop if there is no remaining state at the current index.
+    let index;
+    for (index = 0; index <= tokens.length && states[index] && states[index].length; index ++) {
+        // For each state at the current index.
         // We use an ordinary for loop since the loop body can
         // add new states to the current list.
-        for (let j = 0; j < states[loc].length; j++) {
-            const st = states[loc][j];
+        for (let j = 0; j < states[index].length; j++) {
+            const st = states[index][j];
 
             if (st.isComplete) {
                 // Completion
                 // ----------
                 // Advance all states where the current token is a non-terminal
                 // referencing the rule of the current state.
-                enqueue(loc, states[st.origin].filter(s => s.token === st.rule).map(s => s.next));
+                enqueue(index, states[st.origin].filter(s => s.token === st.rule).map(s => s.next));
             }
             else if (st.token < grammar.rules.length) {
                 // Prediction
@@ -87,36 +98,34 @@ function parse(grammar, rule, actions, str) {
                 // For each production referenced by the NonTerminal,
                 // create a new state at the beginning of that production.
                 // Bypass nullable rules.
-                enqueue(loc, grammar.rules[st.token].map(p => State.create(st.token, p, 0, loc)));
+                enqueue(index, grammar.rules[st.token].map(p => State.create(st.token, p, 0, index)));
                 if (grammar.nullable[st.token]) {
-                    enqueue(loc, [st.next]);
+                    enqueue(index, [st.next]);
                 }
             }
-            else if (loc < str.length) {
+            else if (index < tokens.length) {
                 // Scanning
                 // --------
                 // If the current state accepts the current character,
                 // create a new state at the next location in the input stream.
                 const symbol = grammar.symbols[st.token];
-                if (symbol === str[loc] || symbol.test && symbol.test(str[loc])) {
-                    enqueue(loc + 1, [st.next]);
+                if (symbol === tokens[index].value || symbol.test && symbol.test(tokens[index].value)) {
+                    enqueue(index + 1, [st.next]);
                 }
             }
         }
     }
 
-    const completeStates = states[loc - 1].filter(s => s.rule === rule && s.origin === 0 && s.isComplete);
-    const failedStates = states[loc - 1].filter(s => !s.isComplete && s.token >= grammar.rules.length);
-    const expected = grammar.symbols.filter((sym, index) => failedStates.some(s => s.token === index));
-
-    const error = loc <= str.length || !completeStates.length;
+    const completeStates = states[index - 1].filter(s => s.rule === rule && s.origin === 0 && s.isComplete);
+    const failedStates = states[index - 1].filter(s => !s.isComplete && s.token >= grammar.rules.length);
+    const error = index <= tokens.length || !completeStates.length;
 
     return {
         error,
+        expected: error ? grammar.symbols.filter((sym, i) => failedStates.some(s => s.token === i)) : [],
         stateCount: states.reduce((prev, s) => prev + s.length, 0),
-        loc: loc - 1,
-        expected,
-        data: error ? undefined : postprocess(grammar, actions, states, str, loc - 1, completeStates[0])
+        loc: index - 1 < tokens.length ? tokens[index - 1].loc : str.length,
+        data: error ? null : postprocess(grammar, actions, states, tokens.map(t => t.value), index - 1, completeStates[0])
     };
 }
 
