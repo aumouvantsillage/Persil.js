@@ -1,11 +1,11 @@
 import * as persil from "../../..";
 
-const _ = 0;
-const INT = 1;
-const PRIMARY = 2;
-const TERM = 3;
-const EXPR = 4;
-const START = 5;
+const START = 0;
+const EXPR = 1;
+const TERM = 2;
+const PRIMARY = 3;
+const INT = 4;
+const _ = 5;
 
 const SPACE = 6;
 const DIGIT = 7;
@@ -17,39 +17,39 @@ const AOP = 11;
 const grammar = {
     symbols: [
         // Non-terminal
-        "whitespace", "int", "primary", "term", "expr", "start",
+        "start", "expr", "term", "primary", "int", "whitespace",
         // Terminal
         /[ \r\n\t]/, /[0-9]/, "(", ")", /[*/]/, /[+-]/
     ],
     rules: [
-        // _: [ \r\n\t]*
+        // START: _ EXPR _
         [
-            [_, SPACE],
-            []
-        ],
-        // INT: [0-9]+
-        [
-            [INT, DIGIT],
-            [DIGIT]
-        ],
-        // PRIMARY: INT | "(" START ")"
-        [
-            [INT],
-            [LPAR, START, RPAR]
-        ],
-        // TERM: PRIMARY (_ [*/] _ TERM)*
-        [
-            [TERM, _, MOP, _, PRIMARY],
-            [PRIMARY]
+            [_, EXPR, _]
         ],
         // EXPR: TERM (_ [+-] _ EXPR)*
         [
             [EXPR, _, AOP, _, TERM],
             [TERM]
         ],
-        // START: _ EXPR _
+        // TERM: PRIMARY (_ [*/] _ TERM)*
         [
-            [_, EXPR, _]
+            [TERM, _, MOP, _, PRIMARY],
+            [PRIMARY]
+        ],
+        // PRIMARY: INT | "(" START ")"
+        [
+            [INT],
+            [LPAR, START, RPAR]
+        ],
+        // INT: [0-9]+
+        [
+            [INT, DIGIT],
+            [DIGIT]
+        ],
+        // _: [ \r\n\t]*
+        [
+            [_, SPACE],
+            []
         ]
     ]
 };
@@ -95,14 +95,14 @@ export function actions(grammar, rule, production, data, options) {
     return data[0];
 }
 
-const parseCalc = persil.parser(grammar, {start: "start", actions});
+const parseCalc = persil.parser(grammar, {actions});
 
 if (module === require.main) {
-    const exprSrc = "56 + 37*2 - (8 /75 + 904 )";
-    const expr = parseCalc(exprSrc);
+    const src = "56 + 37*2 - (8/75 + 904)";
+    const expr = parseCalc(src);
 
     if (expr.error) {
-        process.stderr.write(persil.error(exprSrc, expr) + "\n");
+        process.stderr.write(persil.error(src, expr) + "\n");
         process.exit();
     }
 

@@ -48,11 +48,11 @@ const methods = {
 };
 
 const parseCalc = persil.ast.parser(grammar, {methods});
-const exprSrc = "56 + 37*2 - (8 /75 + 904 )";
-const expr = parseCalc(exprSrc);
+const src = "56 + 37*2 - (8/75 + 904)";
+const expr = parseCalc(src);
 
 if (expr.error) {
-    process.stderr.write(persil.error(exprSrc, expr) + "\n");
+    process.stderr.write(persil.error(src, expr) + "\n");
     process.exit();
 }
 
