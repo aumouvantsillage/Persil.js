@@ -2,7 +2,6 @@ A JavaScript implementation of an Earley parser
 ===============================================
 
 This is a straightforward implementation of an Earley parser
-[as explained in this Wikipedia article](https://en.wikipedia.org/wiki/Earley_parser)
 using the improvement by Aycock and Horspool (2002).
 
 This library also provides:
