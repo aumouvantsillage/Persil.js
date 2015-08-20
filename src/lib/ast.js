@@ -1,4 +1,4 @@
-import * as persil from "./persil";
+import * as core from "./core";
 
 export function create(proto, props = {}) {
     return extend(Object.create(proto), props);
@@ -54,5 +54,5 @@ export function parser(grammar, {start, methods, scan}) {
     for (let n in methods) {
         extend(grammar.nodeTypes[n], methods[n]);
     }
-    return persil.parser(grammar, {start, actions, scan});
+    return core.parser(grammar, {start, actions, scan});
 }

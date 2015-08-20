@@ -1,4 +1,4 @@
-import * as persil from "./persil";
+import * as core from "./core";
 import * as grammar from "./ebnf.bnf.grammar.js";
 import {create} from "./ast";
 import {scanner} from "./lexer";
@@ -407,4 +407,4 @@ export function actions(grammar, rule, production, data, options) {
     return data;
 }
 
-export const compile = persil.parser(grammar, {actions, scan: scanner(grammar)});
+export const compile = core.parser(grammar, {actions, scan: scanner(grammar)});

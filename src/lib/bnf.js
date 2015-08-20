@@ -1,4 +1,4 @@
-import * as persil from "./persil";
+import * as core from "./core";
 import {error} from "./logging";
 import {scanner} from "./lexer";
 
@@ -197,4 +197,4 @@ function generate(data) {
     return {symbols, ignore: data[1], rules};
 }
 
-export const compile = persil.parser(grammar, {actions, scan: scanner(grammar)});
+export const compile = core.parser(grammar, {actions, scan: scanner(grammar)});

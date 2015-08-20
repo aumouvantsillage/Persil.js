@@ -1,5 +1,5 @@
 
-export * from "./lib/persil";
+export * from "./lib/core";
 export * from "./lib/logging";
 export * from "./lib/lexer";
 
