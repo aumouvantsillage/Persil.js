@@ -1,162 +1,174 @@
 import * as persil from "./persil";
 import {error} from "./logging";
+import {scanner} from "./lexer";
 
 const GRAMMAR = 0;
-const RULES = 1;
+const RULE_LIST = 1;
 const RULE = 2;
 const CHOICE = 3;
 const SEQUENCE = 4;
 const TERM = 5;
+const IGNORE_LIST = 6;
+const IGNORE_DEF = 7;
+const IGNORE_TERM = 8;
 
-const ID = 6;
-const CHARACTER = 7;
-const RANGE = 8;
-const RANGE_CONTENT = 9;
-const RANGE_CHAR = 10;
-const __ = 11;
-const _ = 12;
-
-const COLON = 13;
-const PIPE = 14;
-const DOT = 15;
-const PERCENT = 16;
-const QUOTE = 17;
-const LBRACKET = 18;
-const RBRACKET = 19;
-const BACKSLASH = 20;
-
-const ID_CHAR = 21;
-const NOT_QUOTE = 22;
-const NOT_RBRACKET = 23;
-const SPACE = 24;
-const ANY_CHAR = 25;
+const COLON = 9;
+const PIPE = 10;
+const DOT = 11;
+const PERCENT = 12;
+const TILDE = 13;
+const ID = 14;
+const STRING = 15;
+const RANGE = 16;
+const REGEXP = 17;
 
 const grammar = {
     symbols: [
         // Non-terminal
-        "grammar", "rules", "rule", "choice", "sequence", "term",
-        "id", "character", "range", "range_chars", "range_char",
-        "whitespace", "optional_whitespace",
+        "grammar", "rule_list", "rule", "choice", "sequence", "term",
+        "ignore_list", "ignore_def", "ignore_term",
+
         // Terminal
-        ":", "|", ".", "%", "\"", "[", "]", "\\",
-        /[a-zA-Z0-9_]/, /[^"\\]/, /[^\]\\]/, /[ \r\n\t]/, /./
+        ":", "|", ".", "%", "~",
+        /^[a-zA-Z0-9_]+/,
+        /^"([^"\\]|\\.)+"/,
+        /^\[([^\]\\]|\\.)+\]/,
+        /^\/([^/\\]|\\.)+\/[gimy]?/
     ],
+    ignore: [/^[ \r\n\t]+/],
     rules: [
-        // grammar: _ rule (__ rule)* _
+        // grammar: rule+ ignore_def*
         [
-            [_, RULES, _]
+            [RULE_LIST, IGNORE_LIST]
         ],
         [
-            [RULES, __, RULE],
+            [RULE_LIST, RULE],
             [RULE]
         ],
-        // rule: id _ ":" _ sequence (_ "|" _ sequence)*
+        // rule: id ":" sequence ("|" sequence)*
         [
-            [ID, _, COLON, _, CHOICE]
+            [ID, COLON, CHOICE]
         ],
         [
-            [CHOICE, _, PIPE, _, SEQUENCE],
+            [CHOICE, PIPE, SEQUENCE],
             [SEQUENCE]
         ],
-        // sequence: term (__ term)*
+        // sequence: (term | "%")+
         [
-            [SEQUENCE, __, TERM],
+            [SEQUENCE, TERM],
             [TERM],
             [PERCENT]
         ],
-        // term: id | character | range | '.' | '%'
+        // term: id | character | range | '.'
         [
             [ID],
-            [CHARACTER],
+            [STRING],
             [RANGE],
-            [DOT]
+            [DOT],
+            [REGEXP]
         ],
-        // id: [a-zA-Z_]+
+        // ignore_list: ignore_def*
         [
-            [ID, ID_CHAR],
-            [ID_CHAR]
-        ],
-        // character: "'" . "'"
-        [
-            [QUOTE, NOT_QUOTE, QUOTE],
-            [QUOTE, BACKSLASH, ANY_CHAR, QUOTE]
-        ],
-        // range: "[" ([^\]\\] | \\.)+ "]"
-        [
-            [LBRACKET, RANGE_CONTENT, RBRACKET]
-        ],
-        [
-            [RANGE_CONTENT, RANGE_CHAR],
-            [RANGE_CHAR]
-        ],
-        [
-            [NOT_RBRACKET],
-            [BACKSLASH, ANY_CHAR]
-        ],
-        // __: [ \r\n\t]+
-        [
-            [SPACE, _]
-        ],
-        // _: __?
-        [
-            [__],
+            [IGNORE_LIST, IGNORE_DEF],
             []
+        ],
+        // ignore_def: "~" (string | range | regexp)
+        [
+            [TILDE, IGNORE_TERM]
+        ],
+        [
+            [STRING],
+            [RANGE],
+            [REGEXP]
         ]
+
     ]
 };
 
-function actions(grammar, rule, production, data, start, end) {
+function actions(grammar, rule, production, data, options) {
     switch (rule) {
         case GRAMMAR:
-            return generate(data[1]);
-        case RULES:
+            return generate(data);
+
+        case RULE_LIST:
+            if (production === 0) {
+                data[0].push(data[1]);
+                return data[0];
+            }
+            break;
+
+        case RULE:
+            return {
+                rule: data[0],
+                productions: data[2]
+            };
+
+        case CHOICE:
             if (production === 0) {
                 data[0].push(data[2]);
                 return data[0];
             }
             break;
-        case RULE:
-            return {
-                rule: data[0],
-                productions: data[4]
-            };
-        case CHOICE:
-            if (production === 0) {
-                data[0].push(data[4]);
-                return data[0];
-            }
-            break;
+
         case SEQUENCE:
             switch (production) {
                 case 0:
-                    data[0].push(data[2]);
+                    data[0].push(data[1]);
                     return data[0];
                 case 2:
                     return [];
             }
             break;
+
         case TERM:
             switch (production) {
                 case 0: return data[0];
                 case 1: return JSON.parse(data[0]);
                 case 2:
-                case 3: return new RegExp(data[0]);
+                case 3: return new RegExp("^" + data[0]);
+                case 4:
+                    let maybeFlag = data[0][data[0].length - 1];
+                    if (maybeFlag === "/") {
+                        return new RegExp("^" + data[0].slice(1, data[0].length - 1));
+                    }
+                    else {
+                        return new RegExp("^" + data[0].slice(1, data[0].length - 2), maybeFlag);
+                    }
             }
             break;
-        case ID:
-        case CHARACTER:
-        case RANGE:
-        case RANGE_CONTENT:
-        case RANGE_CHAR:
-            return data.join("");
+
+        case IGNORE_LIST:
+            if (production === 0) {
+                data[0].push(data[1]);
+                return data[0];
+            }
+            break;
+
+        case IGNORE_DEF:
+            return data[1];
+
+        case IGNORE_TERM:
+            switch (production) {
+                case 0: return JSON.parse(data[0]);
+                case 1: return new RegExp("^" + data[0]);
+                case 2:
+                    let maybeFlag = data[0][data[0].length - 1];
+                    if (maybeFlag === "/") {
+                        return new RegExp("^" + data[0].slice(1, data[0].length - 1));
+                    }
+                    else {
+                        return new RegExp("^" + data[0].slice(1, data[0].length - 2), maybeFlag);
+                    }
+            }
+            break;
     }
     return data;
 }
 
 function generate(data) {
-    const symbols = data.map(r => r.rule);
+    const symbols = data[0].map(r => r.rule);
     const regexps = {};
-    const rules = data.map(r =>
+    const rules = data[0].map(r =>
         r.productions.map(p =>
             p.map(t => {
                 let i;
@@ -182,7 +194,7 @@ function generate(data) {
         )
     );
 
-    return {symbols, rules};
+    return {symbols, ignore: data[1], rules};
 }
 
-export const compile = persil.parser(grammar, {actions});
+export const compile = persil.parser(grammar, {actions, scan: scanner(grammar)});

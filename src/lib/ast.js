@@ -11,7 +11,7 @@ export function extend(obj, props) {
     return obj;
 }
 
-function actions(grammar, rule, production, data, start, end) {
+function actions(grammar, rule, production, data, options) {
     const symbol = grammar.symbols[rule];
     const res = symbol in grammar.nodeTypes ? create(grammar.nodeTypes[symbol]) : {};
     res.$text = "";
@@ -50,9 +50,9 @@ function actions(grammar, rule, production, data, start, end) {
     return res;
 }
 
-export function parser(grammar, {start, methods}) {
+export function parser(grammar, {start, methods, scan}) {
     for (let n in methods) {
         extend(grammar.nodeTypes[n], methods[n]);
     }
-    return persil.parser(grammar, {start, actions});
+    return persil.parser(grammar, {start, actions, scan});
 }

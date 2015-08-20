@@ -1,36 +1,40 @@
 import * as persil from "./persil";
 import * as grammar from "./ebnf.bnf.grammar.js";
 import {create} from "./ast";
+import {scanner} from "./lexer";
 
 const nodeTypes = {
     grammar: {
-        transform() {
-            for (let i = 0; i < this.rules.length; i ++) {
-                this.rules[i].definition.splitTerminals(this, {});
+        transform(options) {
+            if (!options.scanner) {
+                for (let i = 0; i < this.rules.length; i ++) {
+                    this.rules[i].definition.splitTerminals(this, {});
+                }
             }
             for (let i = 0; i < this.rules.length; i ++) {
                 this.rules[i].definition.removeMultiplicity(this);
-            }
-            for (let i = 0; i < this.rules.length; i ++) {
-                this.rules[i].definition.splitRanges();
             }
             for (let i = 0; i < this.rules.length; i ++) {
                 this.rules[i].definition.removeInnerChoices(this);
             }
         },
 
-        generate() {
+        generate(options) {
             const nodeTypes = {};
             this.rules.forEach(rule => {
                 nodeTypes[rule.name.text] = {};
             });
 
-            this.transform();
+            this.transform(options);
 
             const symbols = this.rules.map(rule => rule.name.text);
             const rules = this.rules.map(rule => rule.definition.generate(symbols, {}));
+            const ignore = [];
+            this.ignore.forEach(sym => sym.generate(ignore, {}));
+
             return {
                 symbols,
+                ignore,
                 rules,
                 astMappings: this.rules.map(rule => rule.definition.astMappings),
                 nodeTypes
@@ -65,12 +69,6 @@ const nodeTypes = {
             });
         },
 
-        splitRanges() {
-            this.elements.forEach(seq => {
-                seq.splitRanges();
-            });
-        },
-
         removeInnerChoices(grammar) {
             this.elements.forEach(seq => {
                 seq.removeInnerChoices(grammar);
@@ -96,12 +94,6 @@ const nodeTypes = {
         removeMultiplicity(grammar) {
             this.elements.forEach(term => {
                 term.removeMultiplicity(grammar);
-            });
-        },
-
-        splitRanges() {
-            this.elements.forEach(term => {
-                term.splitRanges();
             });
         },
 
@@ -223,33 +215,6 @@ const nodeTypes = {
             this.variable = this.operator = this.multiplicity = null;
         },
 
-        splitRanges() {
-            if (this.value.splitRanges) {
-                this.value.splitRanges();
-            }
-
-            if (!nodeTypes.ranges.isPrototypeOf(this.value) || this.value.elements.length < 2) {
-                return;
-            }
-
-            this.value = create(nodeTypes.choice, {
-                elements: [
-                    create(nodeTypes.sequence, {
-                        elements: this.value.elements.map(range =>
-                            create(nodeTypes.term, {
-                                variable: null,
-                                operator: null,
-                                value: create(nodeTypes.ranges, {
-                                    elements: [range]
-                                }),
-                                multiplicity: null
-                            })
-                        )
-                    })
-                ]
-            });
-        },
-
         // v=a|b => v=r ... r: a|b
         removeInnerChoices(grammar) {
             if (this.value.removeInnerChoices) {
@@ -307,21 +272,11 @@ const nodeTypes = {
         }
     },
 
-    ranges: {
-        generate(symbols, regexps) {
-            return this.elements[0].generate(symbols, regexps);
-        },
-
-        toString() {
-            return this.elements.map(range => range.toString()).join("");
-        }
-    },
-
     range: {
         generate(symbols, regexps) {
             if (!(this.text in regexps)) {
                 regexps[this.text] = symbols.length;
-                symbols.push(new RegExp(this.text));
+                symbols.push(new RegExp("^" + this.text));
             }
             return regexps[this.text];
         },
@@ -329,32 +284,49 @@ const nodeTypes = {
         toString() {
             return this.text;
         }
+    },
+
+    regexp: {
+        generate(symbols, regexps) {
+            if (!(this.text in regexps)) {
+                regexps[this.text] = symbols.length;
+                const maybeFlag = this.text[this.text.length - 1];
+                let re = maybeFlag === "/" ?
+                    new RegExp("^" + this.text.slice(1, this.text.length - 1)) :
+                    new RegExp("^" + this.text.slice(1, this.text.length - 2), maybeFlag);
+                symbols.push(re);
+            }
+            return regexps[this.text];
+        }
     }
 };
 
-export function actions(grammar, rule, production, data, start, end) {
+export function actions(grammar, rule, production, data, options) {
     switch (grammar.symbols[rule]) {
         case "grammar":
             return create(nodeTypes.grammar, {
-                rules: data[1]
-            }).generate();
+                rules: data[0],
+                ignore: data[1]
+            }).generate(options);
 
-        case "rules":
+        case "rule_list":
+        case "ignore_list":
             if (production === 0) {
-                return data[0].concat([data[2]]);
+                data[0].push(data[1]);
+                return data[0];
             }
             break;
 
         case "rule":
             return create(nodeTypes.rule, {
                 name: data[0],
-                definition: data[4]
+                definition: data[2]
             });
 
         case "choice":
             switch (production) {
                 case 0:
-                    data[0].elements.push(data[4]);
+                    data[0].elements.push(data[2]);
                     return data[0];
 
                 case 1:
@@ -367,7 +339,7 @@ export function actions(grammar, rule, production, data, start, end) {
         case "sequence":
             switch (production) {
                 case 0:
-                    data[0].elements.push(data[2]);
+                    data[0].elements.push(data[1]);
                     return data[0];
 
                 case 1:
@@ -381,15 +353,15 @@ export function actions(grammar, rule, production, data, start, end) {
             return create(nodeTypes.term, {
                 variable: data[0] && data[0].variable,
                 operator: data[0] && data[0].operator,
-                value: data[2],
-                multiplicity: data[4]
+                value: data[1],
+                multiplicity: data[2]
             });
 
         case "target":
             if (production === 0) {
                 return {
                     variable: data[0],
-                    operator: data[2]
+                    operator: data[1]
                 };
             }
             break;
@@ -398,56 +370,41 @@ export function actions(grammar, rule, production, data, start, end) {
             switch (production) {
                 case 0:
                 case 1:
-                case 2: return data[0];
-                case 3: return data[1];
+                case 2:
+                case 3: return data[0];
+                case 4: return data[1];
             }
             break;
 
         case "id":
-            switch (production) {
-                case 0:
-                    data[0].text += data[1];
-                    return data[0];
-
-                case 1:
-                    return create(nodeTypes.id, {
-                        text: data[0]
-                    });
-            }
-            break;
+            return create(nodeTypes.id, {
+                text: data[0]
+            });
 
         case "string":
             return create(nodeTypes.string, {
-                content: data[1]
+                content: data[0].slice(1, data[0].length - 1)
             });
-
-        case "ranges":
-            switch (production) {
-                case 0:
-                    data[0].elements.push(data[1]);
-                    return data[0];
-
-                case 1:
-                    return create(nodeTypes.ranges, {
-                        elements: data
-                    });
-            }
-            break;
 
         case "range":
             return create(nodeTypes.range, {
-                text: data.join("")
+                text: data[0]
             });
+
+        case "regexp":
+            return create(nodeTypes.regexp, {
+                text: data[0]
+            });
+
+        case "ignore_def":
+            return data[1];
 
         case "assignment_operator":
         case "multiplicity":
-        case "string_content":
-        case "string_char":
-        case "range_content":
-        case "range_char":
-            return data.join("");
+        case "ignore_term":
+            return data[0];
     }
     return data;
 }
 
-export const compile = persil.parser(grammar, {actions});
+export const compile = persil.parser(grammar, {actions, scan: scanner(grammar)});

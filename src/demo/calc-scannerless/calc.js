@@ -54,7 +54,7 @@ const grammar = {
     ]
 };
 
-export function actions(grammar, rule, production, data, start, end) {
+export function actions(grammar, rule, production, data, options) {
     switch (grammar.symbols[rule]) {
         case "int":
             if (production === 0) {

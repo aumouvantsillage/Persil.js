@@ -1,31 +1,31 @@
 grammar:
-    _ rules _
+    rule_list ignore_list
 
-rules:
-    rules __ rule
+rule_list:
+    rule_list rule
     | rule
 
 rule:
-    id _ ":" _ choice
+    id ":" choice
 
 choice:
-    choice _ "|" _ sequence
+    choice "|" sequence
     | sequence
 
 sequence:
-    sequence __ term
+    sequence term
     | term
 
 term:
-    target _ primary _ multiplicity
+    target primary multiplicity
 
 target:
-    id _ assignment_operator
+    id assignment_operator
     | %
 
 assignment_operator:
     "="
-    | "+" "="
+    | "+="
 
 multiplicity:
     "?" | "*" | "+" | %
@@ -33,60 +33,35 @@ multiplicity:
 primary:
     id
     | string
-    | ranges
+    | range
+    | regexp
     | "(" choice ")"
 
 id:
-    id [a-zA-Z0-9_]
-    | [a-zA-Z0-9_]
+    /[a-zA-Z0-9_]+/
 
 string:
-    "\"" string_content "\""
-
-string_content:
-    string_content string_char
-    | string_char
-
-string_char:
-    [^"\\]
-    | "\\" .
-
-ranges:
-    ranges _ range
-    | range
+    /"([^"\\]|\\.)+"/
 
 range:
-    "[" range_content "]"
+    /\[([^\]\\]|\\.)+\]/
     | "."
 
-range_content:
-    range_content range_char
-    | range_char
+regexp:
+    /\/([^\/\\]|\\.)+\//
 
-range_char:
-    [^\]\\]
-    | "\\" .
-
-__:
-    [ \r\n\t] _
-    | comment _
-
-_:
-    __ | %
-
-comment:
-    "/" "/" single_line_comment_content [\r\n]
-    | "/" "*" multiline_comment_content multiline_comment_end
-
-single_line_comment_content:
-    single_line_comment_content [^\r\n]
+ignore_list:
+    ignore_list ignore_def
     | %
 
-multiline_comment_content:
-    multiline_comment_content [^*]
-    | multiline_comment_content "*" [^*/]
-    | %
+ignore_def:
+    "~" ignore_term
 
-multiline_comment_end:
-    multiline_comment_end "*"
-    | "*" "/"
+ignore_term:
+    string
+    | range
+    | regexp
+
+~ /[ \r\n\t]+/
+~ /\/\/.*$/m
+~ /\/\*([^*]|\*+[^*\/])*\*+\//

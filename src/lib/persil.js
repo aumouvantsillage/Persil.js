@@ -15,7 +15,7 @@ export function parser(grammar, {start, actions, scan}) {
         };
     }
 
-    return str => parse(grammar, scan, actions, rule, str);
+    return (str, options = {}) => parse(grammar, scan, actions, rule, str, options);
 }
 
 const State = {
@@ -49,7 +49,7 @@ const State = {
     }
 };
 
-function parse(grammar, scan, actions, rule, str) {
+function parse(grammar, scan, actions, rule, str, options) {
     const tokens = scan(str);
     if (tokens.error) {
         return tokens;
@@ -125,7 +125,7 @@ function parse(grammar, scan, actions, rule, str) {
         expected: error ? grammar.symbols.filter((sym, i) => failedStates.some(s => s.token === i)) : [],
         stateCount: states.reduce((prev, s) => prev + s.length, 0),
         loc: index - 1 < tokens.length ? tokens[index - 1].loc : str.length,
-        data: error ? null : postprocess(grammar, actions, states, tokens.map(t => t.value), index - 1, completeStates[0])
+        data: error ? null : postprocess(grammar, actions, states, tokens.map(t => t.value), index - 1, completeStates[0], options)
     };
 }
 
@@ -155,7 +155,7 @@ function markNullableRules(grammar) {
     } while(changed);
 }
 
-function postprocess(grammar, actions, states, str, fromLoc, fromState) {
+function postprocess(grammar, actions, states, str, fromLoc, fromState, options) {
     const data = [];
     let loc = fromLoc, st = fromState;
     while (st.dot > 0) {
@@ -166,7 +166,7 @@ function postprocess(grammar, actions, states, str, fromLoc, fromState) {
                 states[s.origin].some(s => st.isDuplicateOf(s.next))
             );
             if (children.length) {
-                data.unshift(postprocess(grammar, actions, states, str, loc, children[0]));
+                data.unshift(postprocess(grammar, actions, states, str, loc, children[0], options));
                 loc = children[0].origin;
             }
             else {
@@ -180,7 +180,7 @@ function postprocess(grammar, actions, states, str, fromLoc, fromState) {
     }
 
     return actions ?
-        actions(grammar, fromState.rule, grammar.rules[fromState.rule].indexOf(fromState.production), data, fromState.origin, fromLoc) :
+        actions(grammar, fromState.rule, grammar.rules[fromState.rule].indexOf(fromState.production), data, options) :
         data;
 }
 
@@ -194,8 +194,14 @@ export function stringify(grammar) {
         s instanceof RegExp ? s.toString() : JSON.stringify(s)
     );
 
+    const ignoreAsStrings = grammar.ignore ? grammar.ignore.map(s =>
+        s instanceof RegExp ? s.toString() : JSON.stringify(s)
+    ) : [];
+
     const props = Object.keys(grammar).map(key => key + ":" +
-        (key === "symbols" ? "[" + symbolsAsStrings.join(",") + "]" : JSON.stringify(grammar[key]))
+        (key === "symbols" ? "[" + symbolsAsStrings.join(",") + "]" :
+         key === "ignore"  ? "[" + ignoreAsStrings.join(",") + "]" :
+         JSON.stringify(grammar[key]))
     );
     return `module.exports = {${props.join(",")}};`;
 }

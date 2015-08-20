@@ -22,15 +22,24 @@ module.exports = function (grunt) {
             },
             demo: {
                 files: {
-                    "dist/demo/calc-scannerless/calc.bnf.grammar.js": ["src/demo/calc-scannerless/calc.bnf"]
+                    "dist/demo/calc-scannerless/calc.bnf.grammar.js": ["src/demo/calc-scannerless/calc.bnf"],
+                    "dist/demo/calc-with-scanner/calc.bnf.grammar.js": ["src/demo/calc-with-scanner/calc.bnf"]
                 }
             }
         },
 
         ebnf: {
-            demo: {
+            demo_scannerless: {
                 files: {
                     "dist/demo/calc-scannerless/calc.ebnf.grammar.js": ["src/demo/calc-scannerless/calc.ebnf"]
+                }
+            },
+            demo_with_scanner: {
+                options: {
+                    scanner: true
+                },
+                files: {
+                    "dist/demo/calc-with-scanner/calc.ebnf.grammar.js": ["src/demo/calc-with-scanner/calc.ebnf"]
                 }
             }
         }
@@ -47,12 +56,12 @@ module.exports = function (grunt) {
 
         this.files.forEach(function (f) {
             var src = grunt.file.read(f.src[0]);
-            var res = bnf.compile(src);
+            var res = bnf.compile(src, this.options);
             if (res.error) {
                 grunt.log.error(logging.error(src, res));
             }
             grunt.file.write(f.dest, persil.stringify(res.data));
-        });
+        }, this);
     });
 
     grunt.registerMultiTask("ebnf", function () {
@@ -60,11 +69,11 @@ module.exports = function (grunt) {
 
         this.files.forEach(function (f) {
             var src = grunt.file.read(f.src[0]);
-            var res = persil.ebnf.compile(src);
+            var res = persil.ebnf.compile(src, this.options());
             if (res.error) {
                 grunt.log.error(persil.error(src, res));
             }
             grunt.file.write(f.dest, persil.stringify(res.data));
-        });
+        }, this);
     });
 };

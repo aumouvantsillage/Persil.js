@@ -1,0 +1,14 @@
+expr:
+    first=term operations+=(operator=[+-] operand=term)*
+
+term:
+    first=primary operations+=(operator=[*/] operand=primary)*
+
+primary:
+    value=int
+    | "(" value=expr ")"
+
+int:
+    /[0-9]+/
+
+~ /[ \r\n\t]+/
