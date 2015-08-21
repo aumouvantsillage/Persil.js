@@ -44,8 +44,12 @@ const State = {
     },
 
     get next() {
-        return this.nextState ||
-              (this.nextState = State.create(this.rule, this.production, this.dot + 1, this.origin));
+        if (!this.nextState) {
+            this.nextState = Object.create(this);
+            this.nextState.dot = this.dot + 1;
+            this.nextState.nextState = null;
+        }
+        return this.nextState;
     }
 };
 
