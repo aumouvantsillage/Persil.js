@@ -81,20 +81,28 @@ function parse(grammar, scan, actions, rule, str, options) {
     // Execute one more iteration after the last element
     // to perform a final completion step.
     // Stop if there is no remaining state at the current index.
-    let index;
-    for (index = 0; index <= tokens.length && states[index] && states[index].length; index ++) {
+    let lastCompletedIndex = -1;
+    let lastCompletedState;
+    let tokenIndex;
+    for (tokenIndex = 0; tokenIndex <= tokens.length && states[tokenIndex] && states[tokenIndex].length; tokenIndex ++) {
         // For each state at the current index.
         // We use an ordinary for loop since the loop body can
         // add new states to the current list.
-        for (let j = 0; j < states[index].length; j++) {
-            const st = states[index][j];
+        for (let stateIndex = 0; stateIndex < states[tokenIndex].length; stateIndex++) {
+            const st = states[tokenIndex][stateIndex];
 
             if (st.isComplete) {
                 // Completion
                 // ----------
                 // Advance all states where the current token is a non-terminal
                 // referencing the rule of the current state.
-                enqueue(index, states[st.origin].filter(s => s.token === st.rule).map(s => s.next));
+                enqueue(tokenIndex, states[st.origin].filter(s => s.token === st.rule).map(s => s.next));
+
+                // If the current state completes the start rule, update the last completion index
+                if (st.rule === rule && st.origin === 0) {
+                    lastCompletedIndex = tokenIndex;
+                    lastCompletedState = st;
+                }
             }
             else if (st.token < grammar.rules.length) {
                 // Prediction
@@ -102,34 +110,39 @@ function parse(grammar, scan, actions, rule, str, options) {
                 // For each production referenced by the NonTerminal,
                 // create a new state at the beginning of that production.
                 // Bypass nullable rules.
-                enqueue(index, grammar.rules[st.token].map(p => State.create(st.token, p, 0, index)));
+                enqueue(tokenIndex, grammar.rules[st.token].map(p => State.create(st.token, p, 0, tokenIndex)));
                 if (grammar.nullable[st.token]) {
-                    enqueue(index, [st.next]);
+                    enqueue(tokenIndex, [st.next]);
                 }
             }
-            else if (index < tokens.length) {
+            else if (tokenIndex < tokens.length) {
                 // Scanning
                 // --------
                 // If the current state accepts the current character,
                 // create a new state at the next location in the input stream.
                 const symbol = grammar.symbols[st.token];
-                if (symbol === tokens[index].value || symbol.test && symbol.test(tokens[index].value)) {
-                    enqueue(index + 1, [st.next]);
+                if (symbol === tokens[tokenIndex].value || symbol.test && symbol.test(tokens[tokenIndex].value)) {
+                    enqueue(tokenIndex + 1, [st.next]);
                 }
             }
         }
     }
 
-    const completeStates = states[index - 1].filter(s => s.rule === rule && s.origin === 0 && s.isComplete);
-    const failedStates = states[index - 1].filter(s => !s.isComplete && s.token >= grammar.rules.length);
-    const error = index <= tokens.length || !completeStates.length;
+    // Collect the states at the last index that expected a token
+    const failedStates = states[tokenIndex - 1].filter(s => !s.isComplete && s.token >= grammar.rules.length);
 
     return {
-        error,
-        expected: error ? grammar.symbols.filter((sym, i) => failedStates.some(s => s.token === i)) : [],
+        // Parsing fails if the main rule did not complete
+        // or completed before the end of the token array.
+        error: lastCompletedIndex < tokens.length - 1,
+        // The expected tokens at the index where parsing stopped
+        expected: grammar.symbols.filter((sym, i) => failedStates.some(s => s.token === i)),
+        // The number of states created by the parser
         stateCount: states.reduce((prev, s) => prev + s.length, 0),
-        loc: index - 1 < tokens.length ? tokens[index - 1].loc : str.length,
-        data: error ? null : postprocess(grammar, actions, states, tokens.map(t => t.value), index - 1, completeStates[0], options)
+        // The location where the parser stopped
+        loc: tokenIndex - 1 < tokens.length ? tokens[tokenIndex - 1].loc : str.length,
+        // The postprocessed data, if the main rule completed
+        data: lastCompletedState ? postprocess(grammar, actions, states, tokens.map(t => t.value), lastCompletedIndex, lastCompletedState, options) : null
     };
 }
 

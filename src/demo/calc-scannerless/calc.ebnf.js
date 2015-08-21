@@ -53,8 +53,7 @@ const expr = parseCalc(src);
 
 if (expr.error) {
     process.stderr.write(persil.error(src, expr) + "\n");
-    process.exit();
 }
 
-console.log(expr.data.result);
+console.log(`Result = ${expr.data.result}`);
 console.log(`State count = ${expr.stateCount}`);
