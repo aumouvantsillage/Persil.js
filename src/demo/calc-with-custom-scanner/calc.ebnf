@@ -1,0 +1,9 @@
+expr:
+    first=term operations+=(operator=aop operand=term)*
+
+term:
+    first=primary operations+=(operator=mop operand=primary)*
+
+primary:
+    value=int
+    | "(" value=expr ")"

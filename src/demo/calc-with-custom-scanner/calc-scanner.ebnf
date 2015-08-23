@@ -1,0 +1,21 @@
+
+main:
+    token=(int | lpar | rpar | mop | aop | ws)
+
+int:
+    value+=[0-9]+
+
+lpar:
+    value="("
+
+rpar:
+    value=")"
+
+mop:
+    value=[*/]
+
+aop:
+    value=[+-]
+
+ws:
+    [ \r\n\t]+

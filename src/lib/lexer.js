@@ -14,7 +14,7 @@ function search(symbols, str) {
 }
 
 function scan(symbols, ignore, str) {
-    const res = [];
+    const tokens = [];
     let loc = 0;
     while (loc < str.length) {
         const substr = str.slice(loc);
@@ -31,17 +31,19 @@ function scan(symbols, ignore, str) {
 
         // If no symbol matches the current input, return an error.
         if (!match) {
-            return {
-                error: true,
-                loc: loc,
-                expected: symbols
-            };
+            break;
         }
 
         // If a symbol matches the current input, add the matched text
         // to the result.
-        res.push({value: match, loc});
+        tokens.push({value: match, loc});
         loc += match.length;
     }
-    return res;
+
+    return {
+        error: loc < str.length,
+        loc,
+        expected: symbols,
+        data: tokens
+    };
 }

@@ -1,4 +1,4 @@
-export function parser(grammar, {start, actions, scan}) {
+export function parser(grammar, {start, actions, scan} = {}) {
     // Mark nullable rules if it has not already been done.
     if (!("nullable" in grammar)) {
         markNullableRules(grammar);
@@ -11,7 +11,7 @@ export function parser(grammar, {start, actions, scan}) {
 
     if (!scan) {
         scan = function (str) {
-            return str.split("").map((value, loc) => ({value, loc}));
+            return {data: str.split("").map((value, loc) => ({value, loc}))};
         };
     }
 
@@ -54,9 +54,11 @@ const State = {
 };
 
 function parse(grammar, scan, actions, rule, str, options) {
-    const tokens = scan(str);
-    if (tokens.error) {
-        return tokens;
+    const res = scan(str);
+    const tokens = res.data;
+
+    if (!tokens) {
+        return res;
     }
 
     // Create the array for state sets
@@ -121,7 +123,7 @@ function parse(grammar, scan, actions, rule, str, options) {
                 // If the current state accepts the current character,
                 // create a new state at the next location in the input stream.
                 const symbol = grammar.symbols[st.token];
-                if (symbol === tokens[tokenIndex].value || symbol.test && symbol.test(tokens[tokenIndex].value)) {
+                if (symbol === tokens[tokenIndex].value || symbol.test && symbol.test(tokens[tokenIndex].value) || symbol.ext && tokens[tokenIndex].hasType(symbol.ext)) {
                     enqueue(tokenIndex + 1, [st.next]);
                 }
             }
@@ -131,19 +133,26 @@ function parse(grammar, scan, actions, rule, str, options) {
     // Collect the states at the last index that expected a token
     const failedStates = states[tokenIndex - 1].filter(s => !s.isComplete && s.token >= grammar.rules.length);
 
-    return {
+    // Errors from the scanner are reported in priority.
+    // If the scanner did not report any error, we can override the result object
+    // with error data for this parser.
+    if (!res.error) {
         // Parsing fails if the main rule did not complete
         // or completed before the end of the token array.
-        error: lastCompletedIndex < tokens.length - 1,
+        res.error = res.error || lastCompletedIndex < tokens.length - 1;
         // The expected tokens at the index where parsing stopped
-        expected: grammar.symbols.filter((sym, i) => failedStates.some(s => s.token === i)),
-        // The number of states created by the parser
-        stateCount: states.reduce((prev, s) => prev + s.length, 0),
+        res.expected = grammar.symbols.filter((sym, i) => failedStates.some(s => s.token === i));
         // The location where the parser stopped
-        loc: tokenIndex - 1 < tokens.length ? tokens[tokenIndex - 1].loc : str.length,
-        // The postprocessed data, if the main rule completed
-        data: lastCompletedState ? postprocess(grammar, actions, states, tokens.map(t => t.value), lastCompletedIndex, lastCompletedState, options) : null
-    };
+        res.loc = tokenIndex - 1 < tokens.length ? tokens[tokenIndex - 1].loc : str.length;
+    }
+
+    // The postprocessed data, if the main rule completed
+    res.data = lastCompletedState ? postprocess(grammar, actions, states, tokens.map(t => t.value), lastCompletedIndex, lastCompletedState, options) : null;
+
+    // The number of states created by the parser
+    res.stateCount = states.reduce((prev, s) => prev + s.length, 0);
+
+    return res;
 }
 
 /*

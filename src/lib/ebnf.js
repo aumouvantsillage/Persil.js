@@ -28,7 +28,7 @@ const nodeTypes = {
             this.transform(options);
 
             const symbols = this.rules.map(rule => rule.name.text);
-            const rules = this.rules.map(rule => rule.definition.generate(symbols, {}));
+            const rules = this.rules.map(rule => rule.definition.generate(symbols, {}, {}));
             const ignore = [];
             this.ignore.forEach(sym => sym.generate(ignore, {}));
 
@@ -53,8 +53,8 @@ const nodeTypes = {
     },
 
     choice: {
-        generate(symbols, regexps) {
-            return this.elements.map(seq => seq.generate(symbols, regexps));
+        generate(symbols, regexps, external) {
+            return this.elements.map(seq => seq.generate(symbols, regexps, external));
         },
 
         splitTerminals(grammar, terminals) {
@@ -103,8 +103,8 @@ const nodeTypes = {
             });
         },
 
-        generate(symbols, regexps) {
-            return this.elements.map(term => term.value.generate(symbols, regexps));
+        generate(symbols, regexps, external) {
+            return this.elements.map(term => term.value.generate(symbols, regexps, external));
         },
 
         get astMappings() {
@@ -244,8 +244,16 @@ const nodeTypes = {
     },
 
     id: {
-        generate(symbols, regexps) {
-            return symbols.indexOf(this.text);
+        generate(symbols, regexps, external) {
+            let res = symbols.indexOf(this.text);
+            if (res >= 0) {
+                return res;
+            }
+            if (!(this.text in external)) {
+                external[this.text] = symbols.length;
+                symbols.push({ext: this.text});
+            }
+            return external[this.text];
         },
 
         toString() {
