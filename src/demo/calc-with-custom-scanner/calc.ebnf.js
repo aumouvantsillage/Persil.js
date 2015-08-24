@@ -1,6 +1,6 @@
 import * as persil from "../../..";
 import * as grammar from "./calc.ebnf.grammar";
-import {scan} from "./calc-scanner";
+import * as terminals from "./calc-scanner.ebnf.grammar";
 
 const methods = {
     expr: {
@@ -31,12 +31,12 @@ const methods = {
 
     primary: {
         get result() {
-            return "result" in this.value ? this.value.result : parseInt(this.$text);
+            return typeof this.value === "string" ? parseInt(this.value) : this.value.result;
         }
     }
 };
 
-const parseCalc = persil.ast.parser(grammar, {methods, scan});
+const parseCalc = persil.ast.parser(grammar, {methods, scan: persil.ast.scanner(terminals)});
 const src = "56 + 37*2 - (8/75 + 904)";
 const expr = parseCalc(src);
 

@@ -7,8 +7,3 @@ term:
 primary:
     value=int
     | "(" value=expr ")"
-
-int:
-    /[0-9]+/
-
-~ /[ \r\n\t]+/

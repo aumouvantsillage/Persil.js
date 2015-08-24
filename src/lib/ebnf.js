@@ -1,7 +1,17 @@
 import * as core from "./core";
 import * as grammar from "./ebnf.bnf.grammar.js";
 import {create} from "./ast";
-import {scanner} from "./lexer";
+import {scanner} from "./regexp-scanner";
+
+const terminals = {
+    delim: /^[:|()]/,
+    assignment_operator: /^=|^\+=/,
+    multiplicity: /^[?+*]/,
+    id: /^[a-zA-Z0-9_]+/,
+    string: /^"([^"\\]|\\.)+"/,
+    range: [/^\[([^\]\\]|\\.)+\]/, "."],
+    ignore: [/^[ \r\n\t]+/, /^\/\/.*$/m, /^\/\*([^*]|\*+[^*\/])*\*+\//]
+};
 
 const nodeTypes = {
     grammar: {
@@ -29,12 +39,9 @@ const nodeTypes = {
 
             const symbols = this.rules.map(rule => rule.name.text);
             const rules = this.rules.map(rule => rule.definition.generate(symbols, {}, {}));
-            const ignore = [];
-            this.ignore.forEach(sym => sym.generate(ignore, {}));
 
             return {
                 symbols,
-                ignore,
                 rules,
                 astMappings: this.rules.map(rule => rule.definition.astMappings),
                 nodeTypes
@@ -292,20 +299,6 @@ const nodeTypes = {
         toString() {
             return this.text;
         }
-    },
-
-    regexp: {
-        generate(symbols, regexps) {
-            if (!(this.text in regexps)) {
-                regexps[this.text] = symbols.length;
-                const maybeFlag = this.text[this.text.length - 1];
-                let re = maybeFlag === "/" ?
-                    new RegExp("^" + this.text.slice(1, this.text.length - 1)) :
-                    new RegExp("^" + this.text.slice(1, this.text.length - 2), maybeFlag);
-                symbols.push(re);
-            }
-            return regexps[this.text];
-        }
     }
 };
 
@@ -313,12 +306,10 @@ export function actions(grammar, rule, production, data, options) {
     switch (grammar.symbols[rule]) {
         case "grammar":
             return create(nodeTypes.grammar, {
-                rules: data[0],
-                ignore: data[1]
+                rules: data[0]
             }).generate(options);
 
         case "rule_list":
-        case "ignore_list":
             if (production === 0) {
                 data[0].push(data[1]);
                 return data[0];
@@ -327,7 +318,7 @@ export function actions(grammar, rule, production, data, options) {
 
         case "rule":
             return create(nodeTypes.rule, {
-                name: data[0],
+                name: create(nodeTypes.id, {text: data[0]}),
                 definition: data[2]
             });
 
@@ -337,10 +328,7 @@ export function actions(grammar, rule, production, data, options) {
                     data[0].elements.push(data[2]);
                     return data[0];
 
-                case 1:
-                    return create(nodeTypes.choice, {
-                        elements: data
-                    });
+                case 1: return create(nodeTypes.choice, {elements: data});
             }
             break;
 
@@ -351,68 +339,38 @@ export function actions(grammar, rule, production, data, options) {
                     return data[0];
 
                 case 1:
-                    return create(nodeTypes.sequence, {
-                        elements: data
-                    });
+                    return create(nodeTypes.sequence, {elements: data});
             }
             break;
 
         case "term":
             return create(nodeTypes.term, {
-                variable: data[0] && data[0].variable,
+                variable: data[0] && create(nodeTypes.id, {text: data[0].variable}),
                 operator: data[0] && data[0].operator,
                 value: data[1],
                 multiplicity: data[2]
             });
 
         case "target":
-            if (production === 0) {
-                return {
-                    variable: data[0],
-                    operator: data[1]
-                };
+            switch (production) {
+                case 0: return {variable: data[0], operator: data[1]};
+                case 1: return null;
             }
             break;
 
         case "primary":
             switch (production) {
-                case 0:
-                case 1:
-                case 2:
-                case 3: return data[0];
-                case 4: return data[1];
+                case 0: return create(nodeTypes.id, {text: data[0]});
+                case 1: return create(nodeTypes.string, {content: data[0].slice(1, data[0].length - 1)});
+                case 2: return create(nodeTypes.range, {text: data[0]});
+                case 3: return data[1];
             }
             break;
 
-        case "id":
-            return create(nodeTypes.id, {
-                text: data[0]
-            });
-
-        case "string":
-            return create(nodeTypes.string, {
-                content: data[0].slice(1, data[0].length - 1)
-            });
-
-        case "range":
-            return create(nodeTypes.range, {
-                text: data[0]
-            });
-
-        case "regexp":
-            return create(nodeTypes.regexp, {
-                text: data[0]
-            });
-
-        case "ignore_def":
-            return data[1];
-
-        case "assignment_operator":
-        case "multiplicity":
-        case "ignore_term":
+        case "multiplicity_opt":
             return data[0];
     }
     return data;
 }
 
-export const compile = core.parser(grammar, {actions, scan: scanner(grammar)});
+export const compile = core.parser(grammar, {actions, scan: scanner(terminals)});

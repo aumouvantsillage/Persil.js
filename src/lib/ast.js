@@ -78,10 +78,41 @@ function actions(grammar, rule, production, data, options) {
 }
 
 export function parser(grammar, {start, methods, scan} = {}) {
-    for (let n in methods) {
-        if (n in grammar.nodeTypes) {
-            extend(grammar.nodeTypes[n], methods[n]);
+    for (let t in methods) {
+        if (t in grammar.nodeTypes) {
+            extend(grammar.nodeTypes[t], methods[t]);
         }
     }
     return core.parser(grammar, {start, actions, scan});
+}
+
+export function scanner(grammar) {
+    for (let t in grammar.nodeTypes) {
+        grammar.nodeTypes[t].type = t;
+    }
+
+    const parse = parser(grammar);
+
+    return (str) => {
+        let tokens = [];
+        let loc = 0;
+        let res = {};
+        while (loc < str.length) {
+            res = parse(str.slice(loc));
+            if (!res.data) {
+                break;
+            }
+            if ("value" in res.data.token) {
+                tokens.push({
+                    type: res.data.token.type,
+                    value: res.data.token.value.join ? res.data.token.value.join("") : res.data.token.value,
+                    loc
+                });
+            }
+            loc += res.data.token.$text.length;
+        }
+        res.loc = loc;
+        res.data = tokens;
+        return res;
+    };
 }

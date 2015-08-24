@@ -7,7 +7,5 @@ term:
     | primary
 
 primary:
-    /[0-9]+/
+    int
     | "(" expr ")"
-
-~ /[ \r\n\t]+/

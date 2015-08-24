@@ -1,5 +1,5 @@
 import * as persil from "../../..";
-import {symbols, ignore} from "./calc-symbols";
+import {terminals} from "./calc-terminals";
 
 const PRIMARY = 0;
 const TERM = 1;
@@ -12,8 +12,10 @@ const MOP = 6;
 const AOP = 7;
 
 const grammar = {
-    symbols: ["primary", "term", "expr"].concat(symbols),
-    ignore: ignore,
+    symbols: [
+        "primary", "term", "expr",
+        {ext: "int"}, "(", ")", /^[*/]/, /^[+-]/
+    ],
     rules: [
         // PRIMARY: INT | "(" START ")"
         [
@@ -66,7 +68,7 @@ export function actions(grammar, rule, production, data, options) {
     return data[0];
 }
 
-const parseCalc = persil.parser(grammar, {start: "expr", actions, scan: persil.scanner(grammar)});
+const parseCalc = persil.parser(grammar, {start: "expr", actions, scan: persil.scanner(terminals)});
 
 if (module === require.main) {
     const src = "56 + 37*2 - (8/75 + 904)";

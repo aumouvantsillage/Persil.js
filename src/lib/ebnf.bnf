@@ -1,5 +1,5 @@
 grammar:
-    rule_list ignore_list
+    rule_list
 
 rule_list:
     rule_list rule
@@ -17,51 +17,17 @@ sequence:
     | term
 
 term:
-    target primary multiplicity
+    target primary multiplicity_opt
 
 target:
     id assignment_operator
     | %
 
-assignment_operator:
-    "="
-    | "+="
-
-multiplicity:
-    "?" | "*" | "+" | %
+multiplicity_opt:
+    multiplicity | %
 
 primary:
     id
     | string
     | range
-    | regexp
     | "(" choice ")"
-
-id:
-    /[a-zA-Z0-9_]+/
-
-string:
-    /"([^"\\]|\\.)+"/
-
-range:
-    /\[([^\]\\]|\\.)+\]/
-    | "."
-
-regexp:
-    /\/([^\/\\]|\\.)+\//
-
-ignore_list:
-    ignore_list ignore_def
-    | %
-
-ignore_def:
-    "~" ignore_term
-
-ignore_term:
-    string
-    | range
-    | regexp
-
-~ /[ \r\n\t]+/
-~ /\/\/.*$/m
-~ /\/\*([^*]|\*+[^*\/])*\*+\//

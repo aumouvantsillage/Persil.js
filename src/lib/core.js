@@ -55,11 +55,7 @@ const State = {
 
 function parse(grammar, scan, actions, rule, str, options) {
     const res = scan(str);
-    const tokens = res.data;
-
-    if (!tokens) {
-        return res;
-    }
+    const tokens = res.data || [];
 
     // Create the array for state sets
     const states = new Array(tokens.length);
@@ -123,7 +119,9 @@ function parse(grammar, scan, actions, rule, str, options) {
                 // If the current state accepts the current character,
                 // create a new state at the next location in the input stream.
                 const symbol = grammar.symbols[st.token];
-                if (symbol === tokens[tokenIndex].value || symbol.test && symbol.test(tokens[tokenIndex].value) || symbol.ext && tokens[tokenIndex].hasType(symbol.ext)) {
+                if (symbol === tokens[tokenIndex].value ||
+                    symbol.test && symbol.test(tokens[tokenIndex].value) ||
+                    symbol.ext && symbol.ext === tokens[tokenIndex].type) {
                     enqueue(tokenIndex + 1, [st.next]);
                 }
             }
@@ -220,13 +218,8 @@ export function stringify(grammar) {
         s instanceof RegExp ? s.toString() : JSON.stringify(s)
     );
 
-    const ignoreAsStrings = grammar.ignore ? grammar.ignore.map(s =>
-        s instanceof RegExp ? s.toString() : JSON.stringify(s)
-    ) : [];
-
     const props = Object.keys(grammar).map(key => key + ":" +
         (key === "symbols" ? "[" + symbolsAsStrings.join(",") + "]" :
-         key === "ignore"  ? "[" + ignoreAsStrings.join(",") + "]" :
          JSON.stringify(grammar[key]))
     );
     return `module.exports = {${props.join(",")}};`;

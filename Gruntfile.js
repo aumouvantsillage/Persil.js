@@ -52,7 +52,7 @@ module.exports = function (grunt) {
     grunt.registerMultiTask("bnf", function () {
         // We need to use explicit dependencies here.
         // index.js breaks since ebnf.bnf has not already been compiled.
-        var persil = require("./dist/lib/persil");
+        var core = require("./dist/lib/core");
         var bnf = require("./dist/lib/bnf");
         var logging = require("./dist/lib/logging");
 
@@ -62,7 +62,7 @@ module.exports = function (grunt) {
             if (res.error) {
                 grunt.log.error(logging.error(src, res));
             }
-            grunt.file.write(f.dest, persil.stringify(res.data));
+            grunt.file.write(f.dest, core.stringify(res.data));
         }, this);
     });
 
