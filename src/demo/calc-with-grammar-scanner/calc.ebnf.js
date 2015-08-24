@@ -1,6 +1,6 @@
 import * as persil from "../../..";
 import * as grammar from "./calc.ebnf.grammar";
-import * as terminals from "./calc-scanner.ebnf.grammar";
+import * as terminals from "./calc-terminals.ebnf.grammar";
 
 const methods = {
     expr: {
