@@ -62,7 +62,7 @@ function actions(grammar, rule, production, data, options) {
                     for (let prop in elt) {
                         if (prop[0] !== "$") {
                             if (prop in res && res[prop] instanceof Array) {
-                                Array.prototype.push.apply(res[prop], elt[prop]);
+                                res[prop].push(...elt[prop]);
                             }
                             else {
                                 res[prop] = elt[prop];
