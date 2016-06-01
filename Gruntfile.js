@@ -23,28 +23,28 @@ module.exports = function (grunt) {
                     "dist/lib/ebnf.bnf.grammar.js": ["src/lib/ebnf.bnf"]
                 }
             },
-            demo: {
+            examples: {
                 files: {
-                    "dist/demo/calc-scannerless/calc.bnf.grammar.js": ["src/demo/calc-scannerless/calc.bnf"],
-                    "dist/demo/calc-with-regexp-scanner/calc.bnf.grammar.js": ["src/demo/calc-with-regexp-scanner/calc.bnf"]
+                    "dist/examples/calc-scannerless/calc.bnf.grammar.js": ["src/examples/calc-scannerless/calc.bnf"],
+                    "dist/examples/calc-with-regexp-scanner/calc.bnf.grammar.js": ["src/examples/calc-with-regexp-scanner/calc.bnf"]
                 }
             }
         },
 
         ebnf: {
-            demo_scannerless: {
+            examples_scannerless: {
                 files: {
-                    "dist/demo/calc-scannerless/calc.ebnf.grammar.js": ["src/demo/calc-scannerless/calc.ebnf"],
-                    "dist/demo/calc-with-grammar-scanner/calc-terminals.ebnf.grammar.js": ["src/demo/calc-with-grammar-scanner/calc-terminals.ebnf"]
+                    "dist/examples/calc-scannerless/calc.ebnf.grammar.js": ["src/examples/calc-scannerless/calc.ebnf"],
+                    "dist/examples/calc-with-grammar-scanner/calc-terminals.ebnf.grammar.js": ["src/examples/calc-with-grammar-scanner/calc-terminals.ebnf"]
                 }
             },
-            demo_with_scanner: {
+            examples_with_scanner: {
                 options: {
                     scanner: true
                 },
                 files: {
-                    "dist/demo/calc-with-regexp-scanner/calc.ebnf.grammar.js": ["src/demo/calc-with-regexp-scanner/calc.ebnf"],
-                    "dist/demo/calc-with-grammar-scanner/calc.ebnf.grammar.js": ["src/demo/calc-with-grammar-scanner/calc.ebnf"]
+                    "dist/examples/calc-with-regexp-scanner/calc.ebnf.grammar.js": ["src/examples/calc-with-regexp-scanner/calc.ebnf"],
+                    "dist/examples/calc-with-grammar-scanner/calc.ebnf.grammar.js": ["src/examples/calc-with-grammar-scanner/calc.ebnf"]
                 }
             }
         }
