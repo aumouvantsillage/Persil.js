@@ -1,0 +1,28 @@
+json:
+    object
+    | array
+    | string_literal
+    | number_literal
+    | boolean_literal
+    | null_literal
+
+object:
+    "{" (members+=pair ("," members+=pair)* )? "}"
+
+pair:
+    name=string ":" value=json
+
+array:
+    "[" (elements+=json ("," elements+=json)* )? "]"
+
+string_literal:
+    value=string
+
+number_literal:
+    value=number
+
+boolean_literal:
+    value=("true" | "false")
+
+null_literal:
+    "null"

@@ -94,7 +94,10 @@ export function scanner(grammar) {
     const parse = parser(grammar);
 
     function collapseValue(value) {
-        if (typeof value === "string") {
+        if (value === null) {
+            return "";
+        }
+        else if (typeof value === "string") {
             return value;
         }
         else if (value.join) {

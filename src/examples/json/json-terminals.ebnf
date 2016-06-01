@@ -1,0 +1,35 @@
+
+main:
+    token=(string | number | keyword | delim | ws)
+
+string:
+    "\"" value+=char* "\""
+
+char:
+    [^"\\]
+    | "\\" ["\\/bfnrt]
+    | "\\u" hex hex hex hex
+
+hex:
+    [0-9a-fA-F]
+
+number:
+    value=(int frac? exp?)
+
+int:
+    "-"? ([0-9] | [1-9] [0-9]+)
+
+frac:
+    "." [0-9]+
+
+exp:
+    [eE] [+-]? [0-9]+
+
+keyword:
+    value=("true" | "false" | "null")
+
+delim:
+    value=[{}[\],:]
+
+ws:
+    [ \r\n\t]

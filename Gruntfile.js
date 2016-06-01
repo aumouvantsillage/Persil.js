@@ -35,7 +35,8 @@ module.exports = function (grunt) {
             examples_scannerless: {
                 files: {
                     "dist/examples/calc-scannerless/calc.ebnf.grammar.js": ["src/examples/calc-scannerless/calc.ebnf"],
-                    "dist/examples/calc-with-grammar-scanner/calc-terminals.ebnf.grammar.js": ["src/examples/calc-with-grammar-scanner/calc-terminals.ebnf"]
+                    "dist/examples/calc-with-grammar-scanner/calc-terminals.ebnf.grammar.js": ["src/examples/calc-with-grammar-scanner/calc-terminals.ebnf"],
+                    "dist/examples/json/json-terminals.ebnf.grammar.js": ["src/examples/json/json-terminals.ebnf"]
                 }
             },
             examples_with_scanner: {
@@ -44,7 +45,8 @@ module.exports = function (grunt) {
                 },
                 files: {
                     "dist/examples/calc-with-regexp-scanner/calc.ebnf.grammar.js": ["src/examples/calc-with-regexp-scanner/calc.ebnf"],
-                    "dist/examples/calc-with-grammar-scanner/calc.ebnf.grammar.js": ["src/examples/calc-with-grammar-scanner/calc.ebnf"]
+                    "dist/examples/calc-with-grammar-scanner/calc.ebnf.grammar.js": ["src/examples/calc-with-grammar-scanner/calc.ebnf"],
+                    "dist/examples/json/json.ebnf.grammar.js": ["src/examples/json/json.ebnf"]
                 }
             }
         }
