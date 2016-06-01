@@ -93,6 +93,18 @@ export function scanner(grammar) {
 
     const parse = parser(grammar);
 
+    function collapseValue(value) {
+        if (typeof value === "string") {
+            return value;
+        }
+        else if (value.join) {
+            return value.map(collapseValue).join("");
+        }
+        else {
+            return value.$text;
+        }
+    }
+
     return (str) => {
         let tokens = [];
         let loc = 0;
@@ -105,7 +117,7 @@ export function scanner(grammar) {
             if ("value" in res.data.token) {
                 tokens.push({
                     type: res.data.token.type,
-                    value: res.data.token.value.join ? res.data.token.value.join("") : res.data.token.value,
+                    value: collapseValue(res.data.token.value),
                     loc
                 });
             }

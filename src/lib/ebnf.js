@@ -270,7 +270,12 @@ const nodeTypes = {
 
     string: {
         splitTerminals(grammar, terminals) {
-            this.content = JSON.parse(`"${this.content}"`);
+            try {
+                this.content = JSON.parse(`"${this.content}"`);
+            }
+            catch(e) {
+                console.log(`Invalid terminal: '${this.content}'`);
+            }
         },
 
         generate(symbols, regexps) {
