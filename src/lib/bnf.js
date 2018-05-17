@@ -11,11 +11,10 @@ const TERM = 5;
 
 const COLON = 6;
 const PIPE = 7;
-const DOT = 8;
-const PERCENT = 9;
-const ID = 10;
-const STRING = 11;
-const RANGE = 12;
+const PERCENT = 8;
+const ID = 9;
+const STRING = 10;
+const RANGE = 11;
 
 const grammar = {
     symbols: [
@@ -23,7 +22,7 @@ const grammar = {
         "grammar", "rule_list", "rule", "choice", "sequence", "term",
 
         // Terminal
-        ":", "|", ".", "%",
+        ":", "|", "%",
         {ext: "id"}, {ext: "string"}, {ext: "range"}
     ],
     rules: [

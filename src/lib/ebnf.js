@@ -269,15 +269,6 @@ const nodeTypes = {
     },
 
     string: {
-        splitTerminals(grammar, terminals) {
-            try {
-                this.content = JSON.parse(`"${this.content}"`);
-            }
-            catch(e) {
-                console.log(`Invalid terminal: '${this.content}'`);
-            }
-        },
-
         generate(symbols, regexps) {
             let index = symbols.indexOf(this.content);
             if (index < 0) {
@@ -366,7 +357,7 @@ export function actions(grammar, rule, production, data, options) {
         case "primary":
             switch (production) {
                 case 0: return create(nodeTypes.id, {text: data[0]});
-                case 1: return create(nodeTypes.string, {content: data[0].slice(1, data[0].length - 1)});
+                case 1: return create(nodeTypes.string, {content: JSON.parse(data[0])});
                 case 2: return create(nodeTypes.range, {text: data[0]});
                 case 3: return data[1];
             }
