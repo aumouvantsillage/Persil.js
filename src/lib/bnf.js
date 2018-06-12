@@ -114,6 +114,7 @@ function actions(grammar, rule, production, data, options) {
 
 function generate(data) {
     const symbols = data[0].map(r => r.rule);
+    const ruleCount = data[0].length;
     const regexps = {};
     const external = {};
     const rules = data[0].map(r =>
@@ -121,7 +122,10 @@ function generate(data) {
             p.map(t => {
                 let i;
                 if (typeof t === "string") {
-                    i = symbols.indexOf(t);
+                    i = symbols.slice(ruleCount).indexOf(t);
+                    if (i >= 0) {
+                        i += ruleCount;
+                    }
                 }
                 else if (t.id) {
                     if (t.id in external) {

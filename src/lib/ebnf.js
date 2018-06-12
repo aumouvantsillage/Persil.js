@@ -38,7 +38,7 @@ const nodeTypes = {
             this.transform(options);
 
             const symbols = this.rules.map(rule => rule.name.text);
-            const rules = this.rules.map(rule => rule.definition.generate(symbols, {}, {}));
+            const rules = this.rules.map(rule => rule.definition.generate(this, symbols, {}, {}));
 
             return {
                 symbols,
@@ -60,8 +60,8 @@ const nodeTypes = {
     },
 
     choice: {
-        generate(symbols, regexps, external) {
-            return this.elements.map(seq => seq.generate(symbols, regexps, external));
+        generate(grammar, symbols, regexps, external) {
+            return this.elements.map(seq => seq.generate(grammar, symbols, regexps, external));
         },
 
         splitTerminals(grammar, terminals) {
@@ -110,8 +110,8 @@ const nodeTypes = {
             });
         },
 
-        generate(symbols, regexps, external) {
-            return this.elements.map(term => term.value.generate(symbols, regexps, external));
+        generate(grammar, symbols, regexps, external) {
+            return this.elements.map(term => term.value.generate(grammar, symbols, regexps, external));
         },
 
         get astMappings() {
@@ -251,7 +251,7 @@ const nodeTypes = {
     },
 
     id: {
-        generate(symbols, regexps, external) {
+        generate(grammar, symbols, regexps, external) {
             let res = symbols.indexOf(this.text);
             if (res >= 0) {
                 return res;
@@ -269,9 +269,12 @@ const nodeTypes = {
     },
 
     string: {
-        generate(symbols, regexps) {
-            let index = symbols.indexOf(this.content);
-            if (index < 0) {
+        generate(grammar, symbols, regexps) {
+            let index = symbols.slice(grammar.rules.length).indexOf(this.content);
+            if (index >= 0) {
+                index += grammar.rules.length;
+            }
+            else {
                 index = symbols.length;
                 symbols.push(this.content);
             }
@@ -284,7 +287,7 @@ const nodeTypes = {
     },
 
     range: {
-        generate(symbols, regexps) {
+        generate(grammar, symbols, regexps) {
             if (!(this.text in regexps)) {
                 regexps[this.text] = symbols.length;
                 symbols.push(new RegExp("^" + this.text));
