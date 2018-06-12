@@ -23,6 +23,6 @@
   },
   "main": "dist/index.js",
   "scripts": {
-      "build": "grunt"
+      "prepare": "grunt"
   }
 }
