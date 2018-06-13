@@ -44,5 +44,6 @@ if (expr.error) {
     process.stderr.write(persil.error(src, expr) + "\n");
 }
 
+console.log(expr.data.toString());
 console.log(`Result = ${expr.data.result}`);
 console.log(`State count = ${expr.stateCount}`);

@@ -77,9 +77,49 @@ function actions(grammar, rule, production, data, options) {
     return res;
 }
 
+function indent(level) {
+    let res = "";
+    for (let i = 0; i < level; i ++) {
+        res += "\t";
+    }
+    return res;
+}
+
+function valueToString(value, level) {
+    const i = "\n" + indent(level + 1);
+    if (value instanceof Array) {
+        return "[" + i +
+            value.map(item => valueToString(item, level + 1)).join(i) +
+            "\n" + indent(level) + "]";
+    }
+    if (typeof value === "object") {
+        if (value.toString === Object.prototype.toString) {
+            return "{" + i +
+                Object.entries(value).map(([key, value]) => key + ": " + valueToString(value, level + 1)).join(i) +
+                "\n" + indent(level) + "}";
+        }
+        else {
+            return value.toString(level);
+        }
+    }
+    return JSON.stringify(value);
+}
+
+function defaultMethods(name) {
+    return {
+        toString(level=0) {
+            const i = "\n" + indent(level + 1);
+            return name + " {" + i +
+                Object.entries(this).map(([key, value]) => key + ": " + valueToString(value, level + 1)).join(i) +
+                "\n" + indent(level) + "}";
+        }
+    };
+}
+
 export function parser(grammar, {start, methods, scan} = {}) {
     for (let t in methods) {
         if (t in grammar.nodeTypes) {
+            extend(grammar.nodeTypes[t], defaultMethods(t));
             extend(grammar.nodeTypes[t], methods[t]);
         }
     }
