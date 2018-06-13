@@ -7,6 +7,7 @@ export function error(src, obj) {
         if (obj.token.value !== null) {
             found += ":" + JSON.stringify(obj.token.value)
         }
+    }
     else {
         found = src[obj.loc];
     }
