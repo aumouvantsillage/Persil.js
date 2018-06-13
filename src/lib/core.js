@@ -141,7 +141,7 @@ function parse(grammar, scan, actions, rule, str, options) {
         // The expected tokens at the index where parsing stopped
         res.expected = grammar.symbols.filter((sym, i) => failedStates.some(s => s.token === i));
         // The location where the parser stopped
-        res.loc = tokenIndex - 1 < tokens.length ? tokens[tokenIndex - 1].loc : str.length;
+        res.token = tokenIndex - 1 < tokens.length ? tokens[tokenIndex] : {type: "EOF", value: null, loc: str.length};
     }
 
     // The postprocessed data, if the main rule completed
