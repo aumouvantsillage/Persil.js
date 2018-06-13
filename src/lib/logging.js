@@ -1,7 +1,7 @@
 export function error(src, obj) {
     const loc = location(src, obj.token ? obj.token.loc : obj.loc);
     const expected = obj.expected.map(e => e instanceof RegExp ? e.toString() : JSON.stringify(e)).join(" | ");
-    let found
+    let found;
     if (obj.token) {
         found = obj.token.type;
         if (obj.token.value !== null) {
