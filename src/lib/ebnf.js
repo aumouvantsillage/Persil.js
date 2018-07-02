@@ -257,6 +257,7 @@ const nodeTypes = {
                 return res;
             }
             if (!(this.text in external)) {
+                console.log("Found reference  to external symbol: " + this.text);
                 external[this.text] = symbols.length;
                 symbols.push({ext: this.text});
             }
