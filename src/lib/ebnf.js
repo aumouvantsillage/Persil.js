@@ -38,7 +38,11 @@ const nodeTypes = {
             this.transform(options);
 
             const symbols = this.rules.map(rule => rule.name.text);
-            const rules = this.rules.map(rule => rule.definition.generate(this, symbols, {}, {}));
+            const regexps = {};
+            const external =  {};
+            const rules = this.rules.map(rule => rule.definition.generate(this, symbols, regexps, external));
+
+            console.log("Found references to external symbols: " + Object.keys(external).join(", "));
 
             return {
                 symbols,
@@ -257,7 +261,6 @@ const nodeTypes = {
                 return res;
             }
             if (!(this.text in external)) {
-                console.log("Found reference  to external symbol: " + this.text);
                 external[this.text] = symbols.length;
                 symbols.push({ext: this.text});
             }
