@@ -11,7 +11,7 @@ export function error(src, obj) {
     else {
         found = JSON.stringify(src[obj.loc]);
     }
-    return `Parse error at ${loc.line}:${loc.col}.\nExpected ${expected}\nFound ${found}.`;
+    return `Syntax error at ${loc.line}:${loc.col}.\nExpected ${expected}\nFound ${found}.`;
 }
 
 function location(src, loc) {
