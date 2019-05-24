@@ -55,7 +55,7 @@ const State = {
 
 function parse(grammar, scan, actions, rule, str, options) {
     const scanResult = scan(str);
-    const tokens = scanResult.data || [];
+    const tokens = scanResult.data.filter(t => t.type !== "ignore") || [];
 
     // Create the array for state sets
     const states = new Array(tokens.length);

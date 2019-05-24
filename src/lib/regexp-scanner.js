@@ -27,16 +27,13 @@ function scan(list, str) {
     while (loc < str.length) {
         const substr = str.slice(loc);
 
-        // Attempt to match ignorable text.
         let res = search(list, substr);
         if (!res) {
             break;
         }
 
-        if (res.type !== "ignore") {
-            res.loc = loc;
-            tokens.push(res);
-        }
+        res.loc = loc;
+        tokens.push(res);
 
         loc += res.value.length;
     }
