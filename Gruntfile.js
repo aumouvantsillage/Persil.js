@@ -7,7 +7,7 @@ module.exports = function (grunt) {
 
         babel: {
             options: {
-                presets: ["env"]
+                presets: ["@babel/preset-env"]
             },
             all: {
                 expand: true,
