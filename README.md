@@ -36,14 +36,14 @@ grunt
 Examples
 --------
 
-The source code of the examples can be found in the `src/demo/` folder.
-After building the project, the executable demos are in `dist/demo/`.
+The source code of the examples can be found in the `src/examples/` folder.
+After building the project, the executable demos are in `dist/examples/`.
 
 For instance, type the following command to run the scannerless expression evaluator derived from the EBNF grammar
-at `src/demo/calc-scannerless/calc.ebnf`:
+at `src/examples/calc-scannerless/calc.ebnf`:
 
 ```
-node dist/demo/calc-scannerless/calc.ebnf.js
+node dist/examples/calc-scannerless/calc.ebnf.js
 ```
 
 References
