@@ -48,7 +48,8 @@ const nodeTypes = {
                 symbols,
                 rules,
                 astMappings: this.rules.map(rule => rule.definition.astMappings),
-                nodeTypes
+                nodeTypes,
+                sensitivity: options.sensitivity
             };
         },
 

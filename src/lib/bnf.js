@@ -68,7 +68,7 @@ const terminals = {
 function actions(grammar, rule, production, data, options) {
     switch (rule) {
         case GRAMMAR:
-            return generate(data);
+            return generate(data, options);
 
         case RULE_LIST:
             if (production === 0) {
@@ -112,7 +112,7 @@ function actions(grammar, rule, production, data, options) {
     return data;
 }
 
-function generate(data) {
+function generate(data, options) {
     const symbols = data[0].map(r => r.rule);
     const ruleCount = data[0].length;
     const regexps = {};
@@ -159,7 +159,7 @@ function generate(data) {
         )
     );
 
-    return {symbols, rules};
+    return {symbols, rules, sensitivity: options.sensitivity};
 }
 
 export const compile = core.parser(grammar, {actions, scan: scanner(terminals)});

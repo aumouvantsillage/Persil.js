@@ -119,9 +119,10 @@ function parse(grammar, scan, actions, rule, str, options) {
                 // If the current state accepts the current character,
                 // create a new state at the next location in the input stream.
                 const symbol = grammar.symbols[st.token];
-                if (symbol === tokens[tokenIndex].value ||
-                    symbol.test && symbol.test(tokens[tokenIndex].value) ||
-                    symbol.ext && symbol.ext === tokens[tokenIndex].type) {
+                const sensitivity = grammar.sensitivity || "variant";
+                if (symbol.test && symbol.test(tokens[tokenIndex].value) ||
+                    symbol.ext && symbol.ext === tokens[tokenIndex].type ||
+                    symbol.localeCompare && !symbol.localeCompare(tokens[tokenIndex].value, undefined, {sensitivity})) {
                     enqueue(tokenIndex + 1, [st.next]);
                 }
             }
