@@ -96,7 +96,7 @@ function valueToString(value, level) {
         if (value.toString === Object.prototype.toString) {
             return "{" + i +
                 Object.entries(value)
-                    .filter(([k, _]) => value.hasOwnProperty(k))
+                    .filter(([k, v]) => typeof v !== "function")
                     .map(([k, v]) => k + ": " + valueToString(v, level + 1))
                     .join(i) +
                 "\n" + indent(level) + "}";
