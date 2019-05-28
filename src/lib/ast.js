@@ -95,7 +95,10 @@ function valueToString(value, level) {
     if (typeof value === "object") {
         if (value.toString === Object.prototype.toString) {
             return "{" + i +
-                Object.entries(value).map(([key, value]) => key + ": " + valueToString(value, level + 1)).join(i) +
+                Object.entries(value)
+                    .filter([k, _] => value.hasOwnProperty(k))
+                    .map(([k, v]) => k + ": " + valueToString(v, level + 1))
+                    .join(i) +
                 "\n" + indent(level) + "}";
         }
         else {
