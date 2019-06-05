@@ -1,3 +1,6 @@
+
+import {Token, defaultScanner} from "./scanner";
+
 export function parser(grammar, {start, actions, scan} = {}) {
     // Mark nullable rules if it has not already been done.
     if (!("nullable" in grammar)) {
@@ -9,49 +12,39 @@ export function parser(grammar, {start, actions, scan} = {}) {
         rule = 0;
     }
 
-    if (!scan) {
-        scan = function (str) {
-            return {data: str.split("").map((value, loc) => ({value, loc}))};
-        };
-    }
-
-    return (str, options = {}) => parse(grammar, scan, actions, rule, str, options);
+    return (str, options = {}) => parse(grammar, scan || defaultScanner, actions, rule, str, options);
 }
 
-const State = {
-    create(rule, production, dot = 0, origin = 0) {
-        const res = Object.create(this);
-        res.rule = rule;
-        res.production = production;
-        res.dot = dot;
-        res.origin = origin;
-        res.nextState = null;
-        return res;
-    },
+class State {
+    constructor(rule, production, dot = 0, origin = 0) {
+        this.rule       = rule;
+        this.production = production;
+        this.dot        = dot;
+        this.origin     = origin;
+        this.nextState  = null;
+    }
 
-    isDuplicateOf(other) {
+    equals(other) {
         return this.production === other.production &&
-               this.dot === other.dot &&
-               this.origin === other.origin;
-    },
+               this.dot        === other.dot        &&
+               this.origin     === other.origin;
+    }
 
     get isComplete() {
         return this.dot >= this.production.length;
-    },
+    }
 
     get token() {
         return this.production[this.dot];
-    },
+    }
 
     get next() {
         if (!this.nextState) {
-            this.nextState = Object.create(this);
-            this.nextState.dot = this.dot + 1;
-            this.nextState.nextState = null;
+            this.nextState = new State(this.rule, this.production, this.dot + 1, this.origin);
         }
         return this.nextState;
     }
-};
+}
 
 function parse(grammar, scan, actions, rule, str, options) {
     const scanResult = scan(str);
@@ -66,14 +59,14 @@ function parse(grammar, scan, actions, rule, str, options) {
             states[index] = [];
         }
         sts.forEach(s => {
-            if (!states[index].some(q => s.isDuplicateOf(q))) {
+            if (!states[index].some(q => s.equals(q))) {
                 states[index].push(s);
             }
         });
     }
 
     // Create initial states for the productions of the rule to parse.
-    enqueue(0, grammar.rules[rule].map(p => State.create(rule, p)));
+    enqueue(0, grammar.rules[rule].map(p => new State(rule, p)));
 
     // Process each element of the input string.
     // Execute one more iteration after the last element
@@ -86,9 +79,7 @@ function parse(grammar, scan, actions, rule, str, options) {
         // For each state at the current index.
         // We use an ordinary for loop since the loop body can
         // add new states to the current list.
-        for (let stateIndex = 0; stateIndex < states[tokenIndex].length; stateIndex++) {
-            const st = states[tokenIndex][stateIndex];
-
+        for (let st of states[tokenIndex]) {
             if (st.isComplete) {
                 // Completion
                 // ----------
@@ -108,7 +99,7 @@ function parse(grammar, scan, actions, rule, str, options) {
                 // For each production referenced by the NonTerminal,
                 // create a new state at the beginning of that production.
                 // Bypass nullable rules.
-                enqueue(tokenIndex, grammar.rules[st.token].map(p => State.create(st.token, p, 0, tokenIndex)));
+                enqueue(tokenIndex, grammar.rules[st.token].map(p => new State(st.token, p, 0, tokenIndex)));
                 if (grammar.nullable[st.token]) {
                     enqueue(tokenIndex, [st.next]);
                 }
@@ -189,7 +180,7 @@ function postprocess(grammar, actions, states, str, fromLoc, fromState, options)
         if (token < grammar.rules.length) {
             const children = states[loc].filter(s =>
                 s.rule === token && s.isComplete &&
-                states[s.origin].some(s => st.isDuplicateOf(s.next))
+                states[s.origin].some(s => st.equals(s.next))
             );
             if (children.length) {
                 data.unshift(postprocess(grammar, actions, states, str, loc, children[0], options));
@@ -202,7 +193,7 @@ function postprocess(grammar, actions, states, str, fromLoc, fromState, options)
         else {
             data.unshift(str[--loc]);
         }
-        st = states[loc].filter(s => st.isDuplicateOf(s.next))[0];
+        st = states[loc].filter(s => st.equals(s.next))[0];
     }
 
     return actions ?
