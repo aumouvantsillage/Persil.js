@@ -3,7 +3,7 @@ import * as grammar from "./calc.bnf.grammar";
 import {actions} from "./calc";
 
 const parseCalc = persil.parser(grammar, {start: "start", actions});
-const src = "56 + 37*2 - (8/75 + 904)";
+const src = "56  + 37*2 - (8/75 + 904)";
 const expr = parseCalc(src);
 
 if (expr.error) {
@@ -12,4 +12,3 @@ if (expr.error) {
 
 console.log(`Result = ${expr.data}`);
 console.log(`State count = ${expr.stateCount}`);
-

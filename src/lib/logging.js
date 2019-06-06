@@ -1,16 +1,29 @@
+
+function scanError(src, obj) {
+    return {
+        loc:      location(src, obj.loc),
+        expected: obj.expected.map(e => e instanceof RegExp ? e.toString() : JSON.stringify(e)).join(" | "),
+        found:    JSON.stringify(src[obj.loc])
+    };
+}
+
+function parseError(src, obj) {
+    const found = [];
+    if (obj.token.type) {
+        found.push(obj.token.type);
+    }
+    if (obj.token.value !== null) {
+        found.push(JSON.stringify(obj.token.value));
+    }
+    return {
+        loc:      location(src, obj.token.loc),
+        expected: obj.expected.map(e => e instanceof RegExp ? e.toString() : JSON.stringify(e)).join(" | "),
+        found:    found.join(":")
+    };
+}
+
 export function error(src, obj) {
-    const loc = location(src, obj.token ? obj.token.loc : obj.loc);
-    const expected = obj.expected.map(e => e instanceof RegExp ? e.toString() : JSON.stringify(e)).join(" | ");
-    let found;
-    if (obj.token) {
-        found = obj.token.type;
-        if (obj.token.value !== null) {
-            found += ":" + JSON.stringify(obj.token.value)
-        }
-    }
-    else {
-        found = JSON.stringify(src[obj.loc]);
-    }
+    const {loc, expected, found} = obj.scanResult.error ? scanError(src, obj.scanResult) : parseError(src, obj);
     return `Syntax error at ${loc.line}:${loc.col}.\nExpected ${expected}\nFound ${found}.`;
 }
 
