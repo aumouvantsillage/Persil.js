@@ -8,7 +8,7 @@ const methods = {
             const first = this.first.result;
             return this.operations ?
                 this.operations.reduce((prev, curr) =>
-                    curr.operator.value === "+" ?
+                    curr.operator.text === "+" ?
                         prev + curr.operand.result :
                         prev - curr.operand.result,
                     first) :
@@ -21,7 +21,7 @@ const methods = {
             const first = this.first.result;
             return this.operations ?
                 this.operations.reduce((prev, curr) =>
-                    curr.operator.value === "*" ?
+                    curr.operator.text === "*" ?
                         prev * curr.operand.result :
                         prev / curr.operand.result,
                     first) :
@@ -31,7 +31,7 @@ const methods = {
 
     primary: {
         get result() {
-            return this.value instanceof persil.Token ? parseInt(this.value.value) : this.value.result;
+            return this.value instanceof persil.Token ? parseInt(this.value.text) : this.value.result;
         }
     }
 };

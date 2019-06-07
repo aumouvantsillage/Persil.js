@@ -79,7 +79,7 @@ function actions(grammar, rule, production, data, options) {
 
         case RULE:
             return {
-                rule: data[0].value,
+                rule: data[0].text,
                 productions: data[2]
             };
 
@@ -102,9 +102,9 @@ function actions(grammar, rule, production, data, options) {
 
         case TERM:
             switch (production) {
-                case 0: return {id: data[0].value};
-                case 1: return JSON.parse(data[0].value);
-                case 2: return new RegExp("^" + data[0].value);
+                case 0: return {id: data[0].text};
+                case 1: return JSON.parse(data[0].text);
+                case 2: return new RegExp("^" + data[0].text);
             }
             break;
 

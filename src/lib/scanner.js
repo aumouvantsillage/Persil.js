@@ -1,14 +1,14 @@
 
 export class Token {
-    constructor(type, value, loc) {
-        this.type  = type;
-        this.value = value;
-        this.loc   = loc;
+    constructor(type, text, loc) {
+        this.type = type;
+        this.text = text;
+        this.loc  = loc;
     }
 }
 
 export function defaultScanner(str) {
     return {
-        data: str.split("").map((value, loc) => new Token("char", value, loc))
+        data: str.split("").map((text, loc) => new Token("char", text, loc))
     };
 }

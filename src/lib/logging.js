@@ -12,8 +12,8 @@ function parseError(src, obj) {
     if (obj.token.type) {
         found.push(obj.token.type);
     }
-    if (obj.token.value !== null) {
-        found.push(JSON.stringify(obj.token.value));
+    if (obj.token.text !== null) {
+        found.push(JSON.stringify(obj.token.text));
     }
     return {
         loc:      location(src, obj.token.loc),

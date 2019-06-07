@@ -5,19 +5,19 @@ import * as terminals from "./json-terminals.ebnf.grammar";
 const methods = {
     string_literal: {
         get result() {
-            return JSON.parse(this.value.value);
+            return JSON.parse(this.value.text);
         }
     },
 
     number_literal: {
         get result() {
-            return JSON.parse(this.value.value);
+            return JSON.parse(this.value.text);
         }
     },
 
     boolean_literal: {
         get result() {
-            return this.value.value === "true";
+            return this.value.text === "true";
         }
     },
 
@@ -37,7 +37,7 @@ const methods = {
         get result() {
             let res = {};
             this.members.forEach(m => {
-                res[JSON.parse(m.name.value)] = m.value.result;
+                res[JSON.parse(m.name.text)] = m.value.result;
             });
             return res;
         }
@@ -53,8 +53,7 @@ function test(src) {
         process.stderr.write(persil.error(src, expr) + "\n");
     }
 
-    console.log(expr.scanResult.scanResult);
-    console.log(expr.data.toString());
+    // console.log(expr.data.toString());
     console.log(expr.data.result);
 }
 

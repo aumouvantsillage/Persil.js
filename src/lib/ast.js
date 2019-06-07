@@ -67,7 +67,7 @@ function actions(grammar, rule, production, data, options, str) {
                 if (!res.$len) {
                     res.$loc = elt.loc;
                 }
-                res.$len += elt.value.length + elt.loc - res.$loc;
+                res.$len += elt.text.length + elt.loc - res.$loc;
             }
             else if (elt) {
                 if (!res.$len) {

@@ -59,9 +59,9 @@ export function actions(grammar, rule, production, data) {
         case "int":
             switch (production) {
                 case 0:
-                    return data[0] + data[1].value;
+                    return data[0] + data[1].text;
                 case 1:
-                    return data[0].value;
+                    return data[0].text;
             }
             break;
         case "primary":
@@ -74,7 +74,7 @@ export function actions(grammar, rule, production, data) {
             break;
         case "term":
             if (production === 0) {
-                switch (data[2].value) {
+                switch (data[2].text) {
                     case "*":
                         return data[0] * data[4];
                     case "/":
@@ -84,7 +84,7 @@ export function actions(grammar, rule, production, data) {
             break;
         case "expr":
             if (production === 0) {
-                switch (data[2].value) {
+                switch (data[2].text) {
                     case "+":
                         return data[0] + data[4];
                     case "-":

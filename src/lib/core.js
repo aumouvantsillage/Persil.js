@@ -150,9 +150,9 @@ function parse(grammar, rule, scan, actions, options, str) {
                 // create a new state at the next location in the input stream.
                 const symbol = grammar.symbols[st.symbol];
                 const sensitivity = grammar.sensitivity || "variant";
-                if (symbol.test && symbol.test(tokens[tokenIndex].value) ||
+                if (symbol.test && symbol.test(tokens[tokenIndex].text) ||
                     symbol.ext && symbol.ext === tokens[tokenIndex].type ||
-                    symbol.localeCompare && !symbol.localeCompare(tokens[tokenIndex].value, undefined, {sensitivity})) {
+                    symbol.localeCompare && !symbol.localeCompare(tokens[tokenIndex].text, undefined, {sensitivity})) {
                     enqueue(tokenIndex + 1, [st.next]);
                 }
             }

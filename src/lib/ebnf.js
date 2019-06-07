@@ -322,7 +322,7 @@ export function actions(grammar, rule, production, data, options) {
 
         case "rule":
             return create(nodeTypes.rule, {
-                name: create(nodeTypes.id, {text: data[0].value}),
+                name: create(nodeTypes.id, {text: data[0].text}),
                 definition: data[2]
             });
 
@@ -357,22 +357,22 @@ export function actions(grammar, rule, production, data, options) {
 
         case "target":
             switch (production) {
-                case 0: return {variable: data[0].value, operator: data[1].value};
+                case 0: return {variable: data[0].text, operator: data[1].text};
                 case 1: return null;
             }
             break;
 
         case "primary":
             switch (production) {
-                case 0: return create(nodeTypes.id, {text: data[0].value});
-                case 1: return create(nodeTypes.string, {content: JSON.parse(data[0].value)});
-                case 2: return create(nodeTypes.range, {text: data[0].value});
+                case 0: return create(nodeTypes.id, {text: data[0].text});
+                case 1: return create(nodeTypes.string, {content: JSON.parse(data[0].text)});
+                case 2: return create(nodeTypes.range, {text: data[0].text});
                 case 3: return data[1];
             }
             break;
 
         case "multiplicity_opt":
-            return data[0] && data[0].value;
+            return data[0] && data[0].text;
     }
     return data;
 }
