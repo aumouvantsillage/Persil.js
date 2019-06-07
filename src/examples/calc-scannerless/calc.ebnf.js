@@ -13,7 +13,7 @@ const methods = {
             const first = this.first.result;
             return this.operations ?
                 this.operations.reduce((prev, curr) =>
-                    curr.operator === "+" ?
+                    curr.operator.value === "+" ?
                         prev + curr.operand.result :
                         prev - curr.operand.result,
                     first) :
@@ -26,7 +26,7 @@ const methods = {
             const first = this.first.result;
             return this.operations ?
                 this.operations.reduce((prev, curr) =>
-                    curr.operator === "*" ?
+                    curr.operator.value === "*" ?
                         prev * curr.operand.result :
                         prev / curr.operand.result,
                     first) :
@@ -55,5 +55,6 @@ if (expr.error) {
     process.stderr.write(persil.error(src, expr) + "\n");
 }
 
+console.log(expr.data.toString());
 console.log(`Result = ${expr.data.result}`);
 console.log(`State count = ${expr.stateCount}`);

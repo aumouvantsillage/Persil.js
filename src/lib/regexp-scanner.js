@@ -1,4 +1,6 @@
 
+import {Token} from "./scanner";
+
 export function scanner(terminals) {
     const list = [];
     for (let type in terminals) {
@@ -12,12 +14,12 @@ export function scanner(terminals) {
     return str => scan(list, str);
 }
 
-function search(list, str) {
+function search(list, str, loc) {
     return list.reduce((prev, curr) => {
         const match = curr.def instanceof RegExp ? curr.def.exec(str) :
                       str.slice(0, curr.def.length) === curr.def ? [curr.def] :
                       null;
-        return match && (!prev || match[0].length > prev.value.length) ? {type: curr.type, value: match[0]} : prev;
+        return match && (!prev || match[0].length > prev.value.length) ? new Token(curr.type, match[0], loc) : prev;
     }, null);
 }
 
@@ -27,12 +29,11 @@ function scan(list, str) {
     while (loc < str.length) {
         const substr = str.slice(loc);
 
-        let res = search(list, substr);
+        let res = search(list, substr, loc);
         if (!res) {
             break;
         }
 
-        res.loc = loc;
         tokens.push(res);
 
         loc += res.value.length;

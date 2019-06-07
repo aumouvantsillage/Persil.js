@@ -1,9 +1,9 @@
 
 main:
-    token=(string | number | keyword | delim | ws)
+    token=(string | number | keyword | delim | ignore)
 
 string:
-    "\"" value+=char* "\""
+    "\"" char* "\""
 
 char:
     [^"\\]
@@ -14,7 +14,7 @@ hex:
     [0-9a-fA-F]
 
 number:
-    value=(int frac? exp?)
+    int frac? exp?
 
 int:
     "-"? ([0-9] | [1-9] [0-9]+)
@@ -26,10 +26,10 @@ exp:
     [eE] [+-]? [0-9]+
 
 keyword:
-    value=("true" | "false" | "null")
+    "true" | "false" | "null"
 
 delim:
-    value=[{}[\],:]
+    [{}[\],:]
 
-ws:
+ignore:
     [ \r\n\t]

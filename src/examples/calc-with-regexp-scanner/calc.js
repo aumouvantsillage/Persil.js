@@ -40,14 +40,14 @@ export function actions(grammar, rule, production, data, options) {
         case "primary":
             switch (production) {
                 case 0:
-                    return parseInt(data[0]);
+                    return parseInt(data[0].value);
                 case 1:
                     return data[1];
             }
             break;
         case "term":
             if (production === 0) {
-                switch (data[1]) {
+                switch (data[1].value) {
                     case "*":
                         return data[0] * data[2];
                     case "/":
@@ -57,7 +57,7 @@ export function actions(grammar, rule, production, data, options) {
             break;
         case "expr":
             if (production === 0) {
-                switch (data[1]) {
+                switch (data[1].value) {
                     case "+":
                         return data[0] + data[2];
                     case "-":

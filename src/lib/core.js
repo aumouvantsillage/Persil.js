@@ -222,7 +222,7 @@ function markNullableRules(grammar) {
  * \return The result of the actions function if provided, or a parse tree.
  */
 function postprocess(grammar, actions, options, states, tokens, fromLoc, fromState) {
-    const data = [];
+    const tree = [];
     let loc = fromLoc, st = fromState;
     while (st.dot > 0) {
         // Get the expected symbol at the current state.
@@ -242,16 +242,16 @@ function postprocess(grammar, actions, options, states, tokens, fromLoc, fromSta
             // prepend the result to the parse tree and move back to the
             // origin of the child state.
             if (child) {
-                data.unshift(postprocess(grammar, actions, options, states, tokens, loc, child));
+                tree.unshift(postprocess(grammar, actions, options, states, tokens, loc, child));
                 loc = child.origin;
             }
             else {
-                data.unshift(null);
+                tree.unshift(null);
             }
         }
         else {
             // Tokens are added to the parse tree from the end to the beginning.
-            data.unshift(tokens[--loc].value);
+            tree.unshift(tokens[--loc]);
         }
 
         // Move the current state to one of its predecessors at the new location.
@@ -260,8 +260,8 @@ function postprocess(grammar, actions, options, states, tokens, fromLoc, fromSta
 
     // If applicable, run the actions on the parse tree.
     return actions ?
-        actions(grammar, fromState.rule, grammar.rules[fromState.rule].indexOf(fromState.production), data, options) :
-        data;
+        actions(grammar, fromState.rule, grammar.rules[fromState.rule].indexOf(fromState.production), tree, options) :
+        tree;
 }
 
 export function stringify(grammar) {

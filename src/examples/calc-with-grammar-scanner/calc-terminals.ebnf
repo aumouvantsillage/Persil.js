@@ -1,21 +1,18 @@
 
 main:
-    token=(int | lpar | rpar | mop | aop | ws)
+    token=(int | par | mop | aop | ignore)
 
 int:
-    value+=[0-9]+
+    [0-9]+
 
-lpar:
-    value="("
-
-rpar:
-    value=")"
+par:
+    [()]
 
 mop:
-    value=[*/]
+    [*/]
 
 aop:
-    value=[+-]
+    [+-]
 
-ws:
+ignore:
     [ \r\n\t]+

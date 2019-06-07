@@ -57,8 +57,11 @@ const grammar = {
 export function actions(grammar, rule, production, data, options) {
     switch (grammar.symbols[rule]) {
         case "int":
-            if (production === 0) {
-                return data[0] + data[1];
+            switch (production) {
+                case 0:
+                    return data[0] + data[1].value;
+                case 1:
+                    return data[0].value;
             }
             break;
         case "primary":
@@ -71,7 +74,7 @@ export function actions(grammar, rule, production, data, options) {
             break;
         case "term":
             if (production === 0) {
-                switch (data[2]) {
+                switch (data[2].value) {
                     case "*":
                         return data[0] * data[4];
                     case "/":
@@ -81,7 +84,7 @@ export function actions(grammar, rule, production, data, options) {
             break;
         case "expr":
             if (production === 0) {
-                switch (data[2]) {
+                switch (data[2].value) {
                     case "+":
                         return data[0] + data[4];
                     case "-":
