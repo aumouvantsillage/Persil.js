@@ -21,7 +21,7 @@ function flatten(arr) {
            res;
 }
 
-function actions(grammar, rule, production, data, options) {
+function actions(grammar, rule, production, data, options, str) {
     const symbol = grammar.symbols[rule];
 
     // If the current rule has no property mapping:
@@ -35,7 +35,9 @@ function actions(grammar, rule, production, data, options) {
 
     // Create a new AST node or a plain object.
     const res = symbol in grammar.nodeTypes ? create(grammar.nodeTypes[symbol]) : {};
-    res.$text = "";
+    res.$loc = 0;
+    res.$len = 0;
+    res.$str = str;
 
     // Inspect each child item and fill the result object.
     data.forEach((child, index) => {
@@ -62,10 +64,16 @@ function actions(grammar, rule, production, data, options) {
         // Update the text representation of the current node.
         for (let elt of child) {
             if (elt instanceof Token) {
-                res.$text += elt.value;
+                if (!res.$len) {
+                    res.$loc = elt.loc;
+                }
+                res.$len += elt.value.length + elt.loc - res.$loc;
             }
-            else if (elt !== null) {
-                res.$text += elt.$text;
+            else if (elt) {
+                if (!res.$len) {
+                    res.$loc = elt.$loc;
+                }
+                res.$len += elt.$len + elt.$loc - res.$loc;
 
                 // If there is no mapping, inline all properties of each element
                 // into the current node. This allows to decompose a rule into
@@ -120,17 +128,23 @@ function valueToString(value, level) {
     return JSON.stringify(value);
 }
 
-function nodeToString(level=0) {
-    const i = "\n" + indent(level + 1);
-    return this.$type + " {" + i +
-        Object.entries(this).map(([key, value]) => key + ": " + valueToString(value, level + 1)).join(i) +
-        "\n" + indent(level) + "}";
-}
+const defaultMethods = {
+    toString(level=0) {
+        const i = "\n" + indent(level + 1);
+        return this.$type + " {" + i +
+            Object.entries(this).map(([key, value]) => key + ": " + valueToString(value, level + 1)).join(i) +
+            "\n" + indent(level) + "}";
+    },
+
+    get $text() {
+        return this.$str.slice(this.$loc, this.$loc + this.$len);
+    }
+};
 
 export function parser(grammar, {start, methods, scan} = {}) {
     for (let t in methods) {
         if (t in grammar.nodeTypes) {
-            extend(grammar.nodeTypes[t], {toString: nodeToString});
+            extend(grammar.nodeTypes[t], defaultMethods);
             extend(grammar.nodeTypes[t], methods[t]);
         }
     }
@@ -149,8 +163,10 @@ export function scanner(grammar) {
             if (!res.data) {
                 break;
             }
-            tokens.push(new Token(res.data.token.$type, res.data.token.$text, loc));
-            loc += res.data.token.$text.length;
+
+            const newLoc = res.token ? loc + res.token.loc : str.length;
+            tokens.push(new Token(res.data.token.$type, str.slice(loc, newLoc), loc));
+            loc = newLoc;
         }
         res.loc = loc;
         res.data = tokens;

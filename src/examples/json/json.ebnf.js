@@ -53,6 +53,7 @@ function test(src) {
         process.stderr.write(persil.error(src, expr) + "\n");
     }
 
+    console.log(expr.scanResult.scanResult);
     console.log(expr.data.toString());
     console.log(expr.data.result);
 }
