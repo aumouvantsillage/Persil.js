@@ -24,6 +24,39 @@ export function parser(grammar, {start, scan, actions} = {}) {
     return (str, options = {}) => parse(grammar, rule, scan || defaultScanner, actions, options, str);
 }
 
+export function scanner(grammar, {start} = {}) {
+    // TODO assert start rule is not nullable.
+    
+    // Find the grammar rule for the start symbol.
+    // Use the first rule if no start symbol is provided.
+    let startRule = grammar.symbols.indexOf(start);
+    if (startRule < 0) {
+        startRule = 0;
+    }
+
+    // For each production start -> other, append a new production start -> start other
+    const productions = grammar.rules[startRule];
+    grammar.rules[startRule] = productions.concat(productions.map(p => [startRule].concat(p)));
+
+    function toToken(data) {
+        return data.reduce((a, b) => a.concat(b)); // TODO handle empty data array
+    }
+
+    function actions(grammar, rule, production, data) {
+        if (rule !== startRule) {
+            return toToken(data);
+        }
+        if (production < productions.length) {
+            return [toToken(data)]; // TODO set token type and location
+        }
+        else {
+            return data[0].concat(toToken(data.slice(1)));
+        }
+    }
+
+    return parser(grammar, {start, actions});
+}
+
 /// This class defines a state in the Earley parsing process.
 class State {
     /** Create a new state.

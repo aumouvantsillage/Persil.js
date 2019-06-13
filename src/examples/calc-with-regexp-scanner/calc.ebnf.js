@@ -36,7 +36,7 @@ const methods = {
     }
 };
 
-const parseCalc = persil.ast.parser(grammar, {methods, scan: persil.scanner(terminals)});
+const parseCalc = persil.ast.parser(grammar, {methods, scan: persil.re.scanner(terminals)});
 const src = "56 + 37*2 - (8/75 + 904)";
 const expr = parseCalc(src);
 

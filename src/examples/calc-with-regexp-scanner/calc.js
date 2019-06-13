@@ -68,7 +68,7 @@ export function actions(grammar, rule, production, data) {
     return data[0];
 }
 
-const parseCalc = persil.parser(grammar, {start: "expr", actions, scan: persil.scanner(terminals)});
+const parseCalc = persil.parser(grammar, {start: "expr", actions, scan: persil.re.scanner(terminals)});
 
 if (module === require.main) {
     const src = "56 + 37*2 - (8/75 + 904)";
