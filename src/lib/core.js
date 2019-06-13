@@ -24,9 +24,19 @@ export function parser(grammar, {start, scan, actions} = {}) {
     return (str, options = {}) => parse(grammar, rule, scan || defaultScanner, actions, options, str);
 }
 
+// This is an implementation of Array.prototype.flat()
+export function flatten(arr) {
+    return arr.reduce((prev, elt) => prev.concat(Array.isArray(elt) ? flatten(elt) : elt), []);
+}
+
+function toToken(type, data) {
+    data = flatten(data);
+    return new Token(type, data.map(t => t.text).join(""), data[0].loc);
+}
+
 export function scanner(grammar, {start} = {}) {
     // TODO assert start rule is not nullable.
-    
+
     // Find the grammar rule for the start symbol.
     // Use the first rule if no start symbol is provided.
     let startRule = grammar.symbols.indexOf(start);
@@ -34,24 +44,33 @@ export function scanner(grammar, {start} = {}) {
         startRule = 0;
     }
 
-    // For each production start -> other, append a new production start -> start other
+    // For each production start -> x y z, append a new production start -> start x y z
     const productions = grammar.rules[startRule];
     grammar.rules[startRule] = productions.concat(productions.map(p => [startRule].concat(p)));
 
-    function toToken(data) {
-        return data.reduce((a, b) => a.concat(b)); // TODO handle empty data array
-    }
+    // Collect the token type names.
+    const tokenTypes = productions.map((p, i) => {
+        // If the current production contains more than one element,
+        // or if the first symbol is not a non-terminal, generate a token type name.
+        if (p.length > 1 || p[0] >= grammar.rules.length) {
+            return grammar.symbols[startRule] + "$" + i;
+        }
+        return grammar.symbols[p[0]];
+    });
 
     function actions(grammar, rule, production, data) {
+        // If this is not the start rule, return an array of char tokens.
         if (rule !== startRule) {
-            return toToken(data);
+            return data;
         }
+        // If this is a production of the original grammar, create a new token
+        // from the given array of char tokens.
         if (production < productions.length) {
-            return [toToken(data)]; // TODO set token type and location
+            return [toToken(tokenTypes[production], data)];
         }
-        else {
-            return data[0].concat(toToken(data.slice(1)));
-        }
+        // If this is a generated production of the form start -> start x y z,
+        // create a new token from [x, y, z] and append it to the preceding token array.
+        return data[0].concat(toToken(tokenTypes[production - productions.length], data.slice(1)));
     }
 
     return parser(grammar, {start, actions});
@@ -159,7 +178,7 @@ function parse(grammar, rule, scan, actions, options, str) {
                 // referencing the rule of the current state.
                 enqueue(tokenIndex, states[st.origin].filter(s => s.symbol === st.rule).map(s => s.next));
 
-                // If the current state completes the start rule, update the last completion index
+                // If the current state completes the start rule, update the last completion index.
                 if (st.rule === rule && st.origin === 0) {
                     lastCompletedIndex = tokenIndex;
                     lastCompletedState = st;
@@ -265,17 +284,18 @@ function postprocess(grammar, actions, options, str, states, tokens, fromLoc, fr
         // If the symbol is a non-terminal, process it recursively,
         // else, add it to the current parse tree.
         if (symbol < grammar.rules.length) {
-            // In the current location, find a completed state s for the
-            // the non-terminal, such that there are states at the origin of s
+            // At the current location, collect the completed states s for the
+            // the current non-terminal, such that there are states at the origin of s
             // leading to the current state st.
-            const child = states[loc].find(s =>
+            const children = states[loc].filter(s =>
                 s.rule === symbol && s.isComplete &&
                 states[s.origin].some(q => q.next.equals(st))
             );
-            // If a child state exists, postprocess it recursively,
-            // prepend the result to the parse tree and move back to the
-            // origin of the child state.
-            if (child) {
+            // If child states exist, select the child that generates the longest
+            // match and postprocess it recursively, prepend the result to the parse
+            // tree and move back to the origin of the child state.
+            if (children.length) {
+                const child = children.sort((a, b) => a.origin - b.origin)[0];
                 data.unshift(postprocess(grammar, actions, options, str, states, tokens, loc, child));
                 loc = child.origin;
             }

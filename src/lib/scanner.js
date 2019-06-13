@@ -5,10 +5,6 @@ export class Token {
         this.text = text;
         this.loc  = loc;
     }
-
-    concat(other) {
-        this.text += other instanceof Token ? other.text : other;
-    }
 }
 
 export function defaultScanner(str) {

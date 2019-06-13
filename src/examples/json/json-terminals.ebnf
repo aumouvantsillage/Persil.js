@@ -1,6 +1,6 @@
 
 main:
-    token=(string | number | keyword | delim | ignore)
+    string | number | keyword | delim | ignore
 
 string:
     "\"" char* "\""

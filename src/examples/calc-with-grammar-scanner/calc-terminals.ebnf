@@ -1,6 +1,6 @@
 
 main:
-    token=(int | par | mop | aop | ignore)
+    int | par | mop | aop | ignore
 
 int:
     [0-9]+

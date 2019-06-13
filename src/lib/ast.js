@@ -14,13 +14,6 @@ export function extend(obj, props) {
     return obj;
 }
 
-function flatten(arr) {
-    let res = arr.reduce((prev, elt) => prev.concat(elt instanceof Array ? flatten(elt) : [elt]), []);
-    return res.length === 0 ? null :
-           res.length === 1 ? res[0] :
-           res;
-}
-
 function actions(grammar, rule, production, data, options, str) {
     const symbol = grammar.symbols[rule];
 
@@ -30,7 +23,10 @@ function actions(grammar, rule, production, data, options, str) {
     // return the flattened input data.
     if (grammar.astMappings[rule][production].every(m => m === null) &&
         (!(symbol in grammar.nodeTypes) || grammar.rules[rule][production].length === 1 && grammar.symbols[grammar.rules[rule][production][0]] in grammar.nodeTypes)) {
-        return flatten(data);
+        const res = core.flatten(data);
+        return res.length === 0 ? null :
+               res.length === 1 ? res[0] :
+               res;
     }
 
     // Create a new AST node or a plain object.
@@ -149,27 +145,4 @@ export function parser(grammar, {start, methods, scan} = {}) {
         }
     }
     return core.parser(grammar, {start, actions, scan});
-}
-
-export function scanner(grammar) {
-    const parse = parser(grammar);
-
-    return str => {
-        let tokens = [];
-        let loc = 0;
-        let res = {};
-        while (loc < str.length) {
-            res = parse(str.slice(loc));
-            if (!res.data) {
-                break;
-            }
-
-            const newLoc = res.token ? loc + res.token.loc : str.length;
-            tokens.push(new Token(res.data.token.$type, str.slice(loc, newLoc), loc));
-            loc = newLoc;
-        }
-        res.loc = loc;
-        res.data = tokens;
-        return res;
-    };
 }

@@ -44,7 +44,7 @@ const methods = {
     }
 };
 
-const parseJson = persil.ast.parser(grammar, {methods, scan: persil.ast.scanner(terminals)});
+const parseJson = persil.ast.parser(grammar, {methods, scan: persil.scanner(terminals)});
 
 function test(src) {
     const expr = parseJson(src);
