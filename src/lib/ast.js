@@ -128,7 +128,7 @@ function valueToString(value, level) {
     return JSON.stringify(value);
 }
 
-const defaultMethods = {
+export const defaultMethods = {
     toString(level=0) {
         const i = "\n" + indent(level + 1);
         return this.$type + " {" + i +
