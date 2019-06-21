@@ -45,6 +45,7 @@ export function scanner(grammar, {start} = {}) {
     }
 
     // For each production start -> x y z, append a new production start -> start x y z
+    // FIXME This alters the original grammar: it will not be usable several times.
     const productions = grammar.rules[startRule];
     grammar.rules[startRule] = productions.concat(productions.map(p => [startRule].concat(p)));
 
@@ -149,6 +150,9 @@ function parse(grammar, rule, scan, actions, options, str) {
 
     // Add states to the state set at the given index.
     function enqueue(index, sts) {
+        if (!sts.length) {
+            return;
+        }
         if (!states[index]) {
             states[index] = [];
         }
@@ -291,12 +295,20 @@ function postprocess(grammar, actions, options, str, states, tokens, fromLoc, fr
                 s.rule === symbol && s.isComplete &&
                 states[s.origin].some(q => q.next.equals(st))
             );
-            // If child states exist, select the child that generates the longest
-            // match and postprocess it recursively, prepend the result to the parse
-            // tree and move back to the origin of the child state.
+            // Select a child state and postprocess it recursively.
             if (children.length) {
-                const child = children.sort((a, b) => a.origin - b.origin)[0];
+                const child = children.reduce((a, b) =>
+                    // Prefer the state with the longest match.
+                    a.origin < b.origin ? a :
+                    a.origin > b.origin ? b :
+                    // For same-length matches, prefer the state with the shortest production.
+                    a.production.length < b.production.length ? a :
+                    a.production.length > b.production.length ? b :
+                    // For same-length productions, choose the state with the higher-priority production.
+                    a.rule.indexOf(a.production) <= b.rule.indexOf(b.production) ? a : b);
+                // Prepend the result to the parse tree.
                 data.unshift(postprocess(grammar, actions, options, str, states, tokens, loc, child));
+                // Move back to the origin of the child state.
                 loc = child.origin;
             }
             else {
