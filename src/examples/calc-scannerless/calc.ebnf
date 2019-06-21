@@ -2,10 +2,10 @@ start:
     _ body=expr _
 
 expr:
-    first=term operations+=(_ operator=[+-] _ operand=term)*
+    operands+=term++(_ operators+=[+-] _)
 
 term:
-    first=primary operations+=(_ operator=[*/] _ operand=primary)*
+    operands+=primary++(_ operators+=[*/])
 
 primary:
     value=int

@@ -10,12 +10,12 @@ const methods = {
 
     expr: {
         get result() {
-            const first = this.first.result;
-            return this.operations ?
-                this.operations.reduce((prev, curr) =>
-                    curr.operator.text === "+" ?
-                        prev + curr.operand.result :
-                        prev - curr.operand.result,
+            const first = this.operands[0].result;
+            return this.operators ?
+                this.operators.reduce((prev, curr, index) =>
+                    curr.text === "+" ?
+                        prev + this.operands[index + 1].result :
+                        prev - this.operands[index + 1].result,
                     first) :
                 first;
         }
@@ -23,12 +23,12 @@ const methods = {
 
     term: {
         get result() {
-            const first = this.first.result;
-            return this.operations ?
-                this.operations.reduce((prev, curr) =>
-                    curr.operator.text === "*" ?
-                        prev * curr.operand.result :
-                        prev / curr.operand.result,
+            const first = this.operands[0].result;
+            return this.operators ?
+                this.operators.reduce((prev, curr, index) =>
+                    curr.text === "*" ?
+                        prev * this.operands[index + 1].result :
+                        prev / this.operands[index + 1].result,
                     first) :
                 first;
         }
