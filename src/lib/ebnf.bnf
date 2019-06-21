@@ -24,7 +24,9 @@ target:
     | %
 
 multiplicity_opt:
-    multiplicity | %
+    multiplicity
+    | "++" primary
+    | %
 
 primary:
     id

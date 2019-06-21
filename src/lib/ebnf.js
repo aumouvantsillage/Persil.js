@@ -7,6 +7,7 @@ const terminals = {
     delim: /^[:|()]/,
     assignment_operator: /^=|^\+=/,
     multiplicity: /^[?+*]/,
+    special: /^\+\+/,
     id: /^[a-zA-Z0-9_]+/,
     string: /^"([^"\\]|\\.)+"/,
     range: [/^\[([^\]\\]|\\.)+\]/, "."],
@@ -17,15 +18,21 @@ const nodeTypes = {
     grammar: {
         transform(options) {
             if (!options.scanner) {
-                for (let i = 0; i < this.rules.length; i ++) {
-                    this.rules[i].definition.splitTerminals(this, {});
+                for (let r of this.rules) {
+                    if (r.definition.splitTerminals) {
+                        r.definition.splitTerminals(this, {});
+                    }
                 }
             }
-            for (let i = 0; i < this.rules.length; i ++) {
-                this.rules[i].definition.removeMultiplicity(this);
+            for (let r of this.rules) {
+                if (r.definition.removeMultiplicity) {
+                    r.definition.removeMultiplicity(this);
+                }
             }
-            for (let i = 0; i < this.rules.length; i ++) {
-                this.rules[i].definition.removeInnerChoices(this);
+            for (let r of this.rules) {
+                if (r.definition.removeInnerChoices) {
+                    r.definition.removeInnerChoices(this);
+                }
             }
         },
 
@@ -136,6 +143,9 @@ const nodeTypes = {
             if (this.value.splitTerminals) {
                 this.value.splitTerminals(grammar, terminals);
             }
+            if (this.multiplicity && typeof this.multiplicity !== "string" && this.multiplicity.separator.splitTerminals) {
+                this.multiplicity.separator.splitTerminals(grammar, terminals);
+            }
             if (!nodeTypes.string.isPrototypeOf(this.value) || this.value.content.length < 2) {
                 return;
             }
@@ -154,12 +164,9 @@ const nodeTypes = {
                             create(nodeTypes.sequence, {
                                 elements: this.value.content.split("").map(ch =>
                                     create(nodeTypes.term, {
-                                        variable: null,
-                                        operator: null,
                                         value: create(nodeTypes.string, {
                                             content: ch
-                                        }),
-                                        multiplicity: null
+                                        })
                                     })
                                 )
                             })
@@ -170,55 +177,77 @@ const nodeTypes = {
             this.value = ruleName;
         },
 
-        // v=p?  => r ... r: v=p    | %
-        // v+=p* => r ... r: r v+=p | %
-        // v+=p+ => r ... r: r v+=p | v+=p
+        // v=p?    => r ... r: v=p      | %
+        // v+=p*   => r ... r: r v+=p   | %
+        // v+=p+   => r ... r: r v+=p   | v+=p
+        // v+=p++s => r ... r: r s v+=p | v+=p
         removeMultiplicity(grammar) {
             if (this.value.removeMultiplicity) {
                 this.value.removeMultiplicity(grammar);
             }
+
+            // If the term has no multiplicity, leave immediately.
             if (!this.multiplicity) {
                 return;
             }
 
+            // If the term is a separated list (using operator "++"),
+            // move the separator definition to a new rule.
+            let separatorRuleName;
+            if (typeof this.multiplicity !== "string") {
+                // Generate a new rule name for the separator subexpression.
+                separatorRuleName = create(nodeTypes.id, {
+                    text: "$" + grammar.rules.length
+                });
+
+                // Copy the separator subexpression to the new rule.
+                grammar.rules.push(create(nodeTypes.rule, {
+                    name: separatorRuleName,
+                    definition: create(nodeTypes.choice, {
+                        elements: [create(nodeTypes.sequence, {
+                            elements: [create(nodeTypes.term, {
+                                value: this.multiplicity.separator
+                            })]
+                        })]
+                    })
+                }));
+            }
+
+            // Generate a new rule name for the current term.
             const ruleName = create(nodeTypes.id, {
                 text: "$" + grammar.rules.length
             });
+
+            // Create the terms of the first production of the new rule.
+            const p0 = [];
+            if (this.multiplicity !== "?") {
+                p0.push(create(nodeTypes.term, {value: ruleName}));
+            }
+            if (separatorRuleName) {
+                p0.push(create(nodeTypes.term, {value: separatorRuleName}))
+            }
+            p0.push(create(nodeTypes.term, {
+                variable: this.variable,
+                operator: this.operator,
+                value: this.value
+            }));
+
+            // Create the terms of the second production of the new rule.
+            const p1 = [];
+            if (this.multiplicity === "+" || separatorRuleName) {
+                p1.push(create(nodeTypes.term, {
+                    variable: this.variable,
+                    operator: this.operator,
+                    value: this.value
+                }));
+            }
+
             grammar.rules.push(create(nodeTypes.rule, {
                 name: ruleName,
                 definition: create(nodeTypes.choice, {
                     elements: [
-                        create(nodeTypes.sequence, {
-                            elements:
-                                (
-                                    this.multiplicity === "?" ?
-                                        [] :
-                                        [
-                                            create(nodeTypes.term, {
-                                                value: ruleName
-                                            })
-                                        ]
-                                ).concat([
-                                    create(nodeTypes.term, {
-                                        variable: this.variable,
-                                        operator: this.operator,
-                                        value: this.value,
-                                        multiplicity: null
-                                    })
-                                ])
-                        }),
-                        create(nodeTypes.sequence, {
-                            elements: this.multiplicity === "+" ?
-                                [
-                                    create(nodeTypes.term, {
-                                        variable: this.variable,
-                                        operator: this.operator,
-                                        value: this.value,
-                                        multiplicity: null
-                                    })
-                                ] :
-                                []
-                        })
+                        create(nodeTypes.sequence, {elements: p0}),
+                        create(nodeTypes.sequence, {elements: p1})
                     ]
                 })
             }));
@@ -372,7 +401,11 @@ export function actions(grammar, rule, production, data, options) {
             break;
 
         case "multiplicity_opt":
-            return data[0] && data[0].text;
+            switch (production) {
+                case 0: return data[0].text;
+                case 1: return {separator: data[1]};
+                case 2: return null;
+            }
     }
     return data;
 }
