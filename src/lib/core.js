@@ -297,6 +297,7 @@ function postprocess(grammar, actions, options, str, states, tokens, fromLoc, fr
             );
             // Select a child state and postprocess it recursively.
             if (children.length) {
+                const rule = grammar.rules[symbol];
                 const child = children.reduce((a, b) =>
                     // Prefer the state with the longest match.
                     a.origin < b.origin ? a :
@@ -305,7 +306,7 @@ function postprocess(grammar, actions, options, str, states, tokens, fromLoc, fr
                     a.production.length < b.production.length ? a :
                     a.production.length > b.production.length ? b :
                     // For same-length productions, choose the state with the higher-priority production.
-                    a.rule.indexOf(a.production) <= b.rule.indexOf(b.production) ? a : b);
+                    rule.indexOf(a.production) <= rule.indexOf(b.production) ? a : b);
                 // Prepend the result to the parse tree.
                 data.unshift(postprocess(grammar, actions, options, str, states, tokens, loc, child));
                 // Move back to the origin of the child state.

@@ -1,7 +1,7 @@
 {
   "name": "persil.js",
   "description": "A JavaScript implementation of an Earley parser",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "keywords": [
     "Earley",
     "parser"
