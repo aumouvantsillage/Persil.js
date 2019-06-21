@@ -138,10 +138,10 @@ export const defaultMethods = {
 };
 
 export function parser(grammar, {start, methods, scan} = {}) {
-    for (let t in methods) {
-        if (t in grammar.nodeTypes) {
-            extend(grammar.nodeTypes[t], defaultMethods);
-            extend(grammar.nodeTypes[t], methods[t]);
+    for (let [k, v] of Object.entries(grammar.nodeTypes)) {
+        extend(v, defaultMethods);
+        if (methods && k in methods) {
+            extend(v, methods[k]);
         }
     }
     return core.parser(grammar, {start, actions, scan});
