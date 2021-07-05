@@ -17,7 +17,7 @@ export function extend(obj, props) {
 function actions(grammar, rule, production, data, options, str) {
     const symbol = grammar.symbols[rule];
 
-    // If the current rule has no property mapping:
+    // If the current production has no property mapping:
     // if the current rule does not map to an explicit AST node, or
     // if the current production contains a single element that maps to an AST node,
     // return the flattened input data.
