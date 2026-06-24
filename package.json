@@ -15,7 +15,7 @@
     "url": "https://github.com/senshu/Persil.js.git"
   },
   "devDependencies": {
-    "@babel/core": "^7.0.0",
+    "@babel/core": "^7.29.6",
     "@babel/preset-env": "^7.0.0",
     "grunt": "^1.5.3",
     "grunt-babel": "^8.0.0",
